@@ -11,6 +11,7 @@ import org.apache.hadoop.yarn.api.records.SchedulingRequest;
 import org.apache.hadoop.yarn.api.records.UpdatedContainer;
 import org.apache.hadoop.yarn.client.api.AMRMClient;
 import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
+import org.apache.hadoop.yarn.client.api.async.NMClientAsync;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,11 +24,18 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
     private static final Logger LOG =
             LoggerFactory.getLogger(RMCallbackHandler.class);
 
+    private NMClientAsync nmClientAsync;
+
+    RMCallbackHandler(NMClientAsync nmClientAsync) {
+        this.nmClientAsync = nmClientAsync;
+
+    }
+
     @Override
     public void onContainersCompleted(List<ContainerStatus> completedContainers) {
         LOG.info("Got response from RM for container ask, completedCnt="
                 + completedContainers.size());
-        for (ContainerStatus containerStatus : completedContainers) {
+        /*for (ContainerStatus containerStatus : completedContainers) {
             String message = appAttemptID + " got container status for containerID="
                     + containerStatus.getContainerId() + ", state="
                     + containerStatus.getState() + ", exitStatus="
@@ -115,14 +123,14 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
         if (numCompletedContainers.get() + numIgnore.get() >=
                 numTotalContainers) {
             done = true;
-        }
+        }*/
     }
 
     @Override
     public void onContainersAllocated(List<Container> allocatedContainers) {
         LOG.info("Got response from RM for container ask, allocatedCnt="
                 + allocatedContainers.size());
-        for (Container allocatedContainer : allocatedContainers) {
+        /*for (Container allocatedContainer : allocatedContainers) {
             if (numAllocatedContainers.get() == numTotalContainers) {
                 LOG.info("The requested number of containers have been allocated."
                         + " Releasing the extra container allocation from the RM.");
@@ -164,7 +172,7 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
                     amRMClient.removeContainerRequest(request);
                 }
             }
-        }
+        }*/
     }
 
     @Override
@@ -190,46 +198,50 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
 
     @Override
     public void onRequestsRejected(List<RejectedSchedulingRequest> rejReqs) {
-        List<SchedulingRequest> reqsToRetry = new ArrayList<>();
+        //List<SchedulingRequest> reqsToRetry = new ArrayList<>();
         for (RejectedSchedulingRequest rejReq : rejReqs) {
             LOG.info("Scheduling Request {} has been rejected. Reason {}",
                     rejReq.getRequest(), rejReq.getReason());
-            reqsToRetry.add(rejReq.getRequest());
+            //reqsToRetry.add(rejReq.getRequest());
         }
-        totalRetries.addAndGet(-1 * reqsToRetry.size());
+        /*totalRetries.addAndGet(-1 * reqsToRetry.size());
         if (totalRetries.get() <= 0) {
             LOG.info("Exiting, since retries are exhausted !!");
             done = true;
         } else {
             amRMClient.addSchedulingRequests(reqsToRetry);
-        }
+        }*/
     }
 
     @Override public void onShutdownRequest() {
-        if (keepContainersAcrossAttempts) {
+        //if (keepContainersAcrossAttempts) {
             LOG.info("Shutdown request received. Ignoring since "
                     + "keep_containers_across_application_attempts is enabled");
-        } else{
+        /*} else{
             LOG.info("Shutdown request received. Processing since "
                     + "keep_containers_across_application_attempts is disabled");
             done = true;
-        }
+        }*/
     }
 
     @Override
-    public void onNodesUpdated(List<NodeReport> updatedNodes) {}
+    public void onNodesUpdated(List<NodeReport> updatedNodes) {
+
+    }
 
     @Override
     public float getProgress() {
-        // set progress to deliver to RM on next heartbeat
+        return 0;
+    }
+        /*// set progress to deliver to RM on next heartbeat
         float progress = (float) numCompletedContainers.get()
                 / numTotalContainers;
         return progress;
-    }
+    }*/
 
     @Override
     public void onError(Throwable e) {
         LOG.error("Error in RMCallbackHandler: ", e);
-        done = true;
+        // done = true;
     }
 }

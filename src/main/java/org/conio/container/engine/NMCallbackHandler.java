@@ -50,7 +50,7 @@ public class NMCallbackHandler extends NMClientAsync.AbstractCallbackHandler {
 
         // If promote_opportunistic_after_start is set, automatically promote
         // opportunistic containers to guaranteed.
-        if (autoPromoteContainers) {
+        /*if (autoPromoteContainers) {
             if (containerStatus.getState() == ContainerState.RUNNING) {
                 Container container = containers.get(containerId);
                 if (container.getExecutionType() == ExecutionType.OPPORTUNISTIC) {
@@ -64,14 +64,14 @@ public class NMCallbackHandler extends NMClientAsync.AbstractCallbackHandler {
                     amRMClient.requestContainerUpdate(container, updateRequest);
                 }
             }
-        }
+        }*/
     }
 
     @Override
     public void onContainerStarted(ContainerId containerId,
                                    Map<String, ByteBuffer> allServiceResponse) {
         LOG.debug("Succeeded to start Container {}", containerId);
-        Container container = containers.get(containerId);
+        /*Container container = containers.get(containerId);
         if (container != null) {
             applicationMaster.nmClientAsync.getContainerStatusAsync(
                     containerId, container.getNodeId());
@@ -86,13 +86,13 @@ public class NMCallbackHandler extends NMClientAsync.AbstractCallbackHandler {
             applicationMaster.publishContainerStartEvent(
                     applicationMaster.timelineClient, container,
                     applicationMaster.domainId, applicationMaster.appSubmitterUgi);
-        }
+        }*/
     }
 
     @Override
     public void onStartContainerError(ContainerId containerId, Throwable t) {
         LOG.error("Failed to start Container {}", containerId, t);
-        containers.remove(containerId);
+        /*containers.remove(containerId);
         applicationMaster.numCompletedContainers.incrementAndGet();
         applicationMaster.numFailedContainers.incrementAndGet();
         if (timelineServiceV2Enabled) {
@@ -101,7 +101,7 @@ public class NMCallbackHandler extends NMClientAsync.AbstractCallbackHandler {
         }
         if (timelineServiceV1Enabled) {
             publishContainerStartFailedEvent(containerId, t.getMessage());
-        }
+        }*/
     }
 
     @Override

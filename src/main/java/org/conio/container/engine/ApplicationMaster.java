@@ -38,6 +38,10 @@ public class ApplicationMaster {
 
     private final Configuration conf;
 
+    private AMRMClientAsync amRMClient;
+
+    private NMClientAsync nmClientAsync;
+
     public static void main(String[] args) throws Exception {
         ApplicationMaster appMaster = null;
         try {
@@ -113,16 +117,16 @@ public class ApplicationMaster {
             appSubmitterUgi.addCredentials(credentials);
         }
 
-        AMRMClientAsync.AbstractCallbackHandler allocListener =
-                new RMCallbackHandler();
-        AMRMClientAsync<AMRMClient.ContainerRequest> amRMClient = AMRMClientAsync.createAMRMClientAsync(1000, allocListener);
-        amRMClient.init(conf);
-        amRMClient.start();
-
         NMCallbackHandler containerListener = new NMCallbackHandler(this);
-        NMClientAsync nmClientAsync = new NMClientAsyncImpl(containerListener);
+        nmClientAsync = new NMClientAsyncImpl(containerListener);
         nmClientAsync.init(conf);
         nmClientAsync.start();
+
+        AMRMClientAsync.AbstractCallbackHandler allocListener =
+                new RMCallbackHandler(nmClientAsync);
+        amRMClient = AMRMClientAsync.createAMRMClientAsync(1000, allocListener);
+        amRMClient.init(conf);
+        amRMClient.start();
 
         String appMasterHostname = NetUtils.getHostname();
 
@@ -132,27 +136,26 @@ public class ApplicationMaster {
 
     }
 
-    private void finish() {
+    private void finish() throws InterruptedException {
+        boolean done = false;
+
         // wait for completion.
-        while (!done
-                && (numCompletedContainers.get() != numTotalContainers)) {
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException ex) {
-            }
+        while (!done) {
+                //&& (numCompletedContainers.get() != numTotalContainers)) {
+            Thread.sleep(200);
         }
 
         // Join all launched threads
         // needed for when we time out
         // and we need to release containers
-        for (Thread launchThread : launchThreads) {
+        /*for (Thread launchThread : launchThreads) {
             try {
                 launchThread.join(10000);
             } catch (InterruptedException e) {
                 LOG.info("Exception thrown in thread join: " + e.getMessage());
                 e.printStackTrace();
             }
-        }
+        }*/
 
         // When the application completes, it should stop all running containers
         LOG.info("Application completed. Stopping running containers");
@@ -165,10 +168,9 @@ public class ApplicationMaster {
         FinalApplicationStatus appStatus;
         boolean success = true;
         String message = null;
-        if (numCompletedContainers.get() - numFailedContainers.get()
-                >= numTotalContainers) {
+        //if (numCompletedContainers.get() - numFailedContainers.get() >= numTotalContainers) {
             appStatus = FinalApplicationStatus.SUCCEEDED;
-        } else {
+        /*} else {
             appStatus = FinalApplicationStatus.FAILED;
             message = String.format("Application Failure: desired = %d, " +
                             "completed = %d, allocated = %d, failed = %d, " +
@@ -176,12 +178,16 @@ public class ApplicationMaster {
                     numCompletedContainers.get(), numAllocatedContainers.get(),
                     numFailedContainers.get(), diagnostics);
             success = false;
-        }
+        }*/
         try {
             amRMClient.unregisterApplicationMaster(appStatus, message, null);
         } catch (YarnException | IOException ex) {
             LOG.error("Failed to unregister application", ex);
         }
         amRMClient.stop();
+    }
+
+    private void cleanup() {
+        // currently we don't need any cleanup steps
     }
 }
