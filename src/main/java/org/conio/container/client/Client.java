@@ -53,7 +53,7 @@ public class Client {
     private static final Logger LOG = LoggerFactory
             .getLogger(Client.class);
 
-    private static final String QUEUE_NAME = "root.conio";
+    private static final String QUEUE_NAME = "root.default"; // TODO make this configurable
     private static final String APP_NAME = "CONIO";
     private static final String APP_MASTER_JAR = "AppMaster.jar";
     private static final int DEFAULT_AM_MEMORY = 100;
@@ -64,11 +64,16 @@ public class Client {
 
     private final long clientStartTime = System.currentTimeMillis();
 
-    private String appMasterJar;
+    private String appMasterJar = "/Users/user/git/conio/target/conio-1.0-SNAPSHOT-jar-with-dependencies.jar";
     private String dockerClientConfig;
 
     public Client() {
         conf = new Configuration();
+        // TODO make this configurable
+        conf.addResource(new Path("/Users/user/Downloads/hadoop-3.3.0/etc/hadoop/core-site.xml"));
+        conf.addResource(new Path("/Users/user/Downloads/hadoop-3.3.0/etc/hadoop/hdfs-site.xml"));
+        conf.addResource(new Path("/Users/user/Downloads/hadoop-3.3.0/etc/hadoop/yarn-site.xml"));
+        conf.reloadConfiguration();
         yarnClient = YarnClient.createYarnClient();
         yarnClient.init(conf);
         opts = createOptions();
@@ -79,17 +84,17 @@ public class Client {
     }
 
     public void init(String[] args) throws ParseException {
-        if (args.length == 0) {
+        /*if (args.length == 0) {
             throw new IllegalArgumentException("No args specified for client to initialize");
-        }
+        }*/
 
-        CommandLine cliParser = new GnuParser().parse(opts, args);
+        // CommandLine cliParser = new GnuParser().parse(opts, args);
 
-        appMasterJar = cliParser.getOptionValue("jar");
+        // appMasterJar = cliParser.getOptionValue("jar");
 
-        if (cliParser.hasOption("docker_client_config")) {
+        /*if (cliParser.hasOption("docker_client_config")) {
             dockerClientConfig = cliParser.getOptionValue("docker_client_config");
-        }
+        }*/
     }
 
     // TODO set no retry for the AM
@@ -148,7 +153,7 @@ public class Client {
 
         Map<String, String> env = new HashMap<String, String>();
         // TODO think about this part
-        env.put("", "");
+        // env.put("", "");
 
         // TODO revisit this part of the code
         {

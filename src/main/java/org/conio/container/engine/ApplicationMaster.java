@@ -58,7 +58,9 @@ public class ApplicationMaster {
 
     private static Options createOptions() {
         // TODO: create a way to handle the same options for the client and the AM
-        return new Options();
+        Options opts = new Options();
+        opts.addOption("appname", true, "the name of the application");
+        return opts;
     }
 
     // TODO: where should this function be placed?

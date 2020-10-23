@@ -34,7 +34,16 @@ Hadoop: 3.3.0
 
 ## Run locally
 
-### Pseudo distributed mode
+### Pseudo distributed mode (Single node setup)
+
+1. Download a supported Hadoop from [here](https://archive.apache.org/dist/hadoop/common/hadoop-3.3.0/hadoop-3.3.0.tar.gz).
+
+1. Set up a Single Node Cluster based on this [document](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/SingleCluster.html).
+
+1. Submit the CONIO application to the cluster using this command:
+```bash
+java -jar conio-1.0-SNAPSHOT-jar-with-dependencies.jar
+```
 
 ### Using Dockerized Hadoop
 
