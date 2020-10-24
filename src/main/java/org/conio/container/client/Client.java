@@ -39,8 +39,9 @@ import org.conio.container.engine.ApplicationMaster;
 import org.conio.container.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Yaml;
 
-import java.io.IOException;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -66,6 +67,7 @@ public class Client {
 
     private String appMasterJar = "/Users/user/git/conio/target/conio-1.0-SNAPSHOT-jar-with-dependencies.jar";
     private String dockerClientConfig;
+    private String yamlFile;
 
     public Client() {
         conf = new Configuration();
@@ -80,21 +82,36 @@ public class Client {
     }
 
     private static Options createOptions() {
-        return new Options();
+        Options opts = new Options();
+        opts.addOption("y", "yaml", true, "the yaml file containing the description of the Kubernetes object");
+        return opts;
     }
 
     public void init(String[] args) throws ParseException {
-        /*if (args.length == 0) {
+        if (args.length == 0) {
             throw new IllegalArgumentException("No args specified for client to initialize");
-        }*/
+        }
 
-        // CommandLine cliParser = new GnuParser().parse(opts, args);
+        CommandLine cliParser = new GnuParser().parse(opts, args);
 
-        // appMasterJar = cliParser.getOptionValue("jar");
+        yamlFile = cliParser.getOptionValue("yaml");
+        if (yamlFile == null || yamlFile.isEmpty()) {
+            throw new IllegalArgumentException("Empty yaml file provided as input");
+        }
+        File file = new File(yamlFile);
+        if (!file.exists()) {
+            throw new IllegalArgumentException("");
+        }
 
-        /*if (cliParser.hasOption("docker_client_config")) {
-            dockerClientConfig = cliParser.getOptionValue("docker_client_config");
-        }*/
+        parseYaml();
+    }
+
+    private void parseYaml() throws FileNotFoundException {
+        Yaml yaml = new Yaml();
+        InputStream inputStream = new FileInputStream(yamlFile);
+
+        Recipe recipe = yaml.loadAs(inputStream,Recipe.class);
+        System.out.println("recipe = " + recipe);
     }
 
     // TODO set no retry for the AM
