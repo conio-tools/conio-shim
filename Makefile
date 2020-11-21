@@ -1,5 +1,5 @@
 compile:
-	mvn package -DskipTests
+	mvn package
 
 clean:
 	mvn clean
