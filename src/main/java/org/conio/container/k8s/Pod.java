@@ -6,26 +6,38 @@ public class Pod {
     private Metadata metadata;
     private PodSpec spec;
 
-    public Pod(String apiVersion, String kind, Metadata metadata, PodSpec spec) {
-        this.apiVersion = apiVersion;
-        this.kind = kind;
-        this.metadata = metadata;
-        this.spec = spec;
+    public Pod() {
     }
 
     public String getApiVersion() {
         return apiVersion;
     }
 
+    public void setApiVersion(String apiVersion) {
+        this.apiVersion = apiVersion;
+    }
+
     public String getKind() {
         return kind;
+    }
+
+    public void setKind(String kind) {
+        this.kind = kind;
     }
 
     public Metadata getMetadata() {
         return metadata;
     }
 
+    public void setMetadata(Metadata metadata) {
+        this.metadata = metadata;
+    }
+
     public PodSpec getSpec() {
         return spec;
+    }
+
+    public void setSpec(PodSpec spec) {
+        this.spec = spec;
     }
 }

@@ -8,4 +8,20 @@ public class ResourceRequirements {
 
     public ResourceRequirements() {
     }
+
+    public Map<String, String> getLimits() {
+        return limits;
+    }
+
+    public void setLimits(Map<String, String> limits) {
+        this.limits = limits;
+    }
+
+    public Map<String, String> getRequests() {
+        return requests;
+    }
+
+    public void setRequests(Map<String, String> requests) {
+        this.requests = requests;
+    }
 }

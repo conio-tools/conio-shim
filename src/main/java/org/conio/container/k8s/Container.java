@@ -14,52 +14,54 @@ public class Container {
     private String name;
     private ResourceRequirements resources;
 
-    /*public static class Builder {
-        private Builder() {
-        }
-
-        public static Builder builder() {
-            return new Builder();
-        }
-
-        public Container build() {
-            return new Container(this);
-        }
-    }
-
-    private Container (Builder builder) {
-    }*/
-
-    public Container(Map<String, String> env, List<String> command, String image, String imagePullPolicy, String name, ResourceRequirements resources) {
-        this.env = env;
-        this.command = command;
-        this.image = image;
-        this.imagePullPolicy = imagePullPolicy;
-        this.name = name;
-        this.resources = resources;
+    public Container() {
     }
 
     public Map<String, String> getEnv() {
         return env;
     }
 
+    public void setEnv(Map<String, String> env) {
+        this.env = env;
+    }
+
     public List<String> getCommand() {
         return command;
+    }
+
+    public void setCommand(List<String> command) {
+        this.command = command;
     }
 
     public String getImage() {
         return image;
     }
 
+    public void setImage(String image) {
+        this.image = image;
+    }
+
     public String getImagePullPolicy() {
         return imagePullPolicy;
+    }
+
+    public void setImagePullPolicy(String imagePullPolicy) {
+        this.imagePullPolicy = imagePullPolicy;
     }
 
     public String getName() {
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public ResourceRequirements getResources() {
         return resources;
+    }
+
+    public void setResources(ResourceRequirements resources) {
+        this.resources = resources;
     }
 }
