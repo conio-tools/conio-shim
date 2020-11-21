@@ -36,6 +36,7 @@ import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.util.DockerClientConfigHandler;
 import org.apache.hadoop.yarn.util.resource.Resources;
 import org.conio.container.engine.ApplicationMaster;
+import org.conio.container.k8s.Pod;
 import org.conio.container.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,7 +88,7 @@ public class Client {
         return opts;
     }
 
-    public void init(String[] args) throws ParseException {
+    public void init(String[] args) throws ParseException, FileNotFoundException {
         if (args.length == 0) {
             throw new IllegalArgumentException("No args specified for client to initialize");
         }
@@ -110,8 +111,8 @@ public class Client {
         Yaml yaml = new Yaml();
         InputStream inputStream = new FileInputStream(yamlFile);
 
-        Recipe recipe = yaml.loadAs(inputStream,Recipe.class);
-        System.out.println("recipe = " + recipe);
+        Pod pod = yaml.loadAs(inputStream, Pod.class);
+        LOG.info("The used image is " + pod.getSpec().getContainers().get(0).getImage());
     }
 
     // TODO set no retry for the AM
