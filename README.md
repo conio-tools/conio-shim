@@ -34,11 +34,22 @@ Hadoop: 3.3.0
 
 ## Run locally
 
+You can run Conio on Hadoop natively or in Docker containers. 
+
 ### Pseudo distributed mode (Single node setup)
+
+Note: Conio on Hadoop requires natives libraries, which is only supported on Linux as of now. 
+Therefore it is currently not possible to run Conio on Mac.
+
+For Linux systems perform the following steps:
 
 1. Download a supported Hadoop from [here](https://archive.apache.org/dist/hadoop/common/hadoop-3.3.0/hadoop-3.3.0.tar.gz).
 
 1. Set up a Single Node Cluster based on this [document](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/SingleCluster.html).
+
+1. Configure to use [Linux Container Executor](https://hadoop.apache.org/docs/r3.3.0/hadoop-yarn/hadoop-yarn-site/SecureContainer.html#Linux_Secure_Container_Executor) in YARN
+
+1. [Enable scheduling of Docker containers](https://hadoop.apache.org/docs/r3.3.0/hadoop-yarn/hadoop-yarn-site/DockerContainers.html) in YARN and set up your Docker daemon accordingly.
 
 1. Submit the CONIO application to the cluster using this command:
 ```bash
@@ -47,7 +58,16 @@ java -jar conio-1.0-SNAPSHOT-jar-with-dependencies.jar
 
 ### Using Dockerized Hadoop
 
+A suitable choice is [big-data-europe/docker-hadoop](https://github.com/big-data-europe/docker-hadoop) which uses Docker compose to run Hadoop daemons.
+
 Note: it should be used with Dind containers
+
+```bash
+export JAR_FILEPATH=
+export CLASS_TO_RUN=
+export PARAMS="/input /output"
+docker run -it -a stdin -a stdout -a stderr --env-file hadoop.env --network docker-hadoop_default bde2020/hadoop-base:latest -- hdfs dfs -ls /
+```
 
 ## Performance
 
