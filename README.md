@@ -63,10 +63,7 @@ A suitable choice is [big-data-europe/docker-hadoop](https://github.com/big-data
 Note: it should be used with Dind containers
 
 ```bash
-export JAR_FILEPATH=
-export CLASS_TO_RUN=
-export PARAMS="/input /output"
-docker run -it -a stdin -a stdout -a stderr --env-file hadoop.env --network docker-hadoop_default bde2020/hadoop-base:latest -- hdfs dfs -ls /
+docker run -it -a stdin -a stdout -a stderr --env-file hadoop.env --network docker-hadoop_default conio/base:master -- java -jar /conio/conio-1.0-SNAPSHOT-jar-with-dependencies.jar -yaml /conio/pod.mlm
 ```
 
 ## Performance
