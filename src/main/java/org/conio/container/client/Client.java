@@ -55,7 +55,7 @@ public class Client {
     private static final Logger LOG = LoggerFactory
             .getLogger(Client.class);
 
-    private static final String QUEUE_NAME = "root.default"; // TODO make this configurable
+    private static final String DEFAULT_QUEUE_NAME = "root.default";
     private static final String APP_NAME = "CONIO";
     private static final String APP_MASTER_JAR = "AppMaster.jar";
     private static final int DEFAULT_AM_MEMORY = 100;
@@ -66,16 +66,17 @@ public class Client {
 
     private final long clientStartTime = System.currentTimeMillis();
 
-    private String appMasterJar = "/Users/user/git/conio/target/conio-1.0-SNAPSHOT-jar-with-dependencies.jar";
+    private String appMasterJar = "/conio/conio-1.0-SNAPSHOT-jar-with-dependencies.jar";
     private String dockerClientConfig;
     private String yamlFile;
+    private String queueName = DEFAULT_QUEUE_NAME;
 
     public Client() {
-        conf = new Configuration();
+        conf = new YarnConfiguration();
         // TODO make this configurable
-        conf.addResource(new Path("/Users/user/Downloads/hadoop-3.3.0/etc/hadoop/core-site.xml"));
-        conf.addResource(new Path("/Users/user/Downloads/hadoop-3.3.0/etc/hadoop/hdfs-site.xml"));
-        conf.addResource(new Path("/Users/user/Downloads/hadoop-3.3.0/etc/hadoop/yarn-site.xml"));
+        conf.addResource(new Path("/etc/hadoop/core-site.xml"));
+        conf.addResource(new Path("/etc/hadoop/hdfs-site.xml"));
+        conf.addResource(new Path("/etc/hadoop/yarn-site.xml"));
         conf.reloadConfiguration();
         yarnClient = YarnClient.createYarnClient();
         yarnClient.init(conf);
@@ -85,6 +86,7 @@ public class Client {
     private static Options createOptions() {
         Options opts = new Options();
         opts.addOption("y", "yaml", true, "the yaml file containing the description of the Kubernetes object");
+        opts.addOption("q", "queue", true, "the queue this application will be submitted");
         return opts;
     }
 
@@ -105,6 +107,8 @@ public class Client {
         }
 
         parseYaml();
+
+        queueName = cliParser.getOptionValue("queue");
     }
 
     private void parseYaml() throws FileNotFoundException {
@@ -119,7 +123,6 @@ public class Client {
     public void run() throws YarnException, IOException {
         yarnClient.start();
 
-        String queueName = QUEUE_NAME;
         QueueInfo queueInfo = yarnClient.getQueueInfo(queueName);
         if (queueInfo == null) {
             throw new IllegalArgumentException(
