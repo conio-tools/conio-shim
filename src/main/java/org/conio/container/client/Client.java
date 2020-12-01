@@ -108,7 +108,10 @@ public class Client {
 
         parseYaml();
 
-        queueName = cliParser.getOptionValue("queue");
+        String configuredQueue = cliParser.getOptionValue("queue");
+        if (configuredQueue != null) {
+            queueName = configuredQueue;
+        }
     }
 
     private void parseYaml() throws FileNotFoundException {
