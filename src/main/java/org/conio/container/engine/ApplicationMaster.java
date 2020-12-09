@@ -25,16 +25,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 
 public class ApplicationMaster {
     private static final Logger LOG = LoggerFactory
             .getLogger(ApplicationMaster.class);
-
-    private final Configuration conf;
 
     private AMRMClientAsync<AMRMClient.ContainerRequest> amRMClient;
     private RMCallbackHandler allocListener;
@@ -61,10 +57,7 @@ public class ApplicationMaster {
         return opts;
     }
 
-    // TODO: where should this function be placed?
     public ApplicationMaster() {
-        // TODO do we need YarnConfiguration?
-        conf = new YarnConfiguration();
     }
 
     private void init(String[] args) throws ParseException, IOException {
@@ -76,9 +69,10 @@ public class ApplicationMaster {
                     "No args specified for application master to initialize");
         }
 
-        CommandLine cliParser = new GnuParser().parse(opts, args);
-
         // TODO set up AM based on cliParser arguments
+        CommandLine cliParser = new GnuParser().parse(opts, args);
+        String appName = cliParser.getOptionValue("appname");
+        LOG.info("The application name is {}", appName);
 
         Map<String, String> envs = System.getenv();
 
@@ -89,6 +83,7 @@ public class ApplicationMaster {
                 .get(ApplicationConstants.Environment.CONTAINER_ID.name()));
         ApplicationAttemptId appAttemptID = containerId.getApplicationAttemptId();
         ApplicationId appId = appAttemptID.getApplicationId();
+        LOG.info("The application ID is {}", appId);
     }
 
     private void run() throws IOException, YarnException {
@@ -108,7 +103,7 @@ public class ApplicationMaster {
                     iter.remove();
                 }
             }
-            ByteBuffer allTokens = ByteBuffer.wrap(dob.getData(), 0, dob.getLength());
+            // ByteBuffer allTokens = ByteBuffer.wrap(dob.getData(), 0, dob.getLength());
 
             String appSubmitterUserName =
                     System.getenv(ApplicationConstants.Environment.USER.name());
@@ -117,7 +112,10 @@ public class ApplicationMaster {
             appSubmitterUgi.addCredentials(credentials);
         }
 
-        NMCallbackHandler containerListener = new NMCallbackHandler(this);
+        // if this needs to be configured, you should also that resource to the AM container context
+        Configuration conf = new YarnConfiguration();
+
+        NMCallbackHandler containerListener = new NMCallbackHandler();
         nmClientAsync = new NMClientAsyncImpl(containerListener);
         nmClientAsync.init(conf);
         nmClientAsync.start();
@@ -152,7 +150,7 @@ public class ApplicationMaster {
     }
 
     private void finish() throws InterruptedException {
-        // wait for completion.
+        // wait for completion
         while (allocListener.isFinished().get()) {
             Thread.sleep(200);
         }
