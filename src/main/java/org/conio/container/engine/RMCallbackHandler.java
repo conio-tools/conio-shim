@@ -1,13 +1,11 @@
 package org.conio.container.engine;
 
-import io.netty.buffer.ByteBuf;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
-import org.apache.hadoop.yarn.api.records.LocalResource;
 import org.apache.hadoop.yarn.api.records.NodeReport;
 import org.apache.hadoop.yarn.api.records.RejectedSchedulingRequest;
 import org.apache.hadoop.yarn.api.records.UpdatedContainer;
@@ -17,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InvalidObjectException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,7 +27,7 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
             LoggerFactory.getLogger(RMCallbackHandler.class);
 
     private final NMClientAsync nmClientAsync;
-    private AtomicBoolean done;
+    private final AtomicBoolean done;
 
     RMCallbackHandler(NMClientAsync nmClientAsync) {
         this.nmClientAsync = nmClientAsync;
@@ -45,8 +42,14 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
 
     @Override
     public void onContainersAllocated(List<Container> allocatedContainers) {
-        LOG.info("Got response from RM for container ask, allocatedCnt="
-                + allocatedContainers.size());
+        if (allocatedContainers.size() != 1) {
+            LOG.warn("Expected exactly one container");
+            if (allocatedContainers.size() == 0) {
+                LOG.error("AllocatedContainer size is zero! Nothing to do.");
+                return;
+            }
+        }
+        Container container = allocatedContainers.get(0);
 
         ByteBuffer allTokens;
         try {
@@ -59,64 +62,40 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
             throw new RuntimeException("unexpected exception", ioe);
         }
 
-        for (Container container : allocatedContainers) {
-            // TODO parameterize these
-            List<String> commands = Arrays.asList("sleep", "60");
-            String image = "library/ubuntu:latest";
+        // TODO parameterize these
+        List<String> commands = Arrays.asList("sleep", "60");
+        String image = "library/ubuntu:latest";
 
-            Map<String, String> env = new HashMap<String, String>();
-            env.put("YARN_CONTAINER_RUNTIME_TYPE", "docker");
-            env.put("YARN_CONTAINER_RUNTIME_DOCKER_IMAGE", image);
-            env.put("YARN_CONTAINER_RUNTIME_DOCKER_RUN_OVERRIDE_DISABLE", "true");
-            env.put("YARN_CONTAINER_RUNTIME_DOCKER_DELAYED_REMOVAL", "true");
+        Map<String, String> env = new HashMap<>();
+        env.put("YARN_CONTAINER_RUNTIME_TYPE", "docker");
+        env.put("YARN_CONTAINER_RUNTIME_DOCKER_IMAGE", image);
+        env.put("YARN_CONTAINER_RUNTIME_DOCKER_RUN_OVERRIDE_DISABLE", "true");
+        env.put("YARN_CONTAINER_RUNTIME_DOCKER_DELAYED_REMOVAL", "true");
 
-            ContainerLaunchContext ctx = ContainerLaunchContext.newInstance(
-                    new HashMap<String, LocalResource>(), env, commands, null, allTokens.duplicate(),
-                    null, null);
-            nmClientAsync.startContainerAsync(container, ctx);
-        }
+        ContainerLaunchContext ctx = ContainerLaunchContext.newInstance(
+                new HashMap<>(), env, commands, null, allTokens.duplicate(),
+                null, null);
+        nmClientAsync.startContainerAsync(container, ctx);
     }
 
     @Override
-    public void onContainersUpdated(
-            List<UpdatedContainer> containers) {
+    public void onContainersUpdated(List<UpdatedContainer> containers) {
+        // default impl
         for (UpdatedContainer container : containers) {
-            LOG.info("Container {} updated, updateType={}, resource={}, "
-                            + "execType={}",
-                    container.getContainer().getId(),
-                    container.getUpdateType().toString(),
-                    container.getContainer().getResource().toString(),
-                    container.getContainer().getExecutionType());
-
-            // TODO Remove this line with finalized updateContainer API.
-            // Currently nm client needs to notify the NM to update container
-            // execution type via NMClient#updateContainerResource() or
-            // NMClientAsync#updateContainerResourceAsync() when
-            // auto-update.containers is disabled, but this API is
-            // under evolving and will need to be replaced by a proper new API.
             nmClientAsync.updateContainerResourceAsync(container.getContainer());
         }
     }
 
     @Override
     public void onRequestsRejected(List<RejectedSchedulingRequest> rejReqs) {
-        //List<SchedulingRequest> reqsToRetry = new ArrayList<>();
-        for (RejectedSchedulingRequest rejReq : rejReqs) {
-            LOG.info("Scheduling Request {} has been rejected. Reason {}",
-                    rejReq.getRequest(), rejReq.getReason());
-            //reqsToRetry.add(rejReq.getRequest());
-        }
-        /*totalRetries.addAndGet(-1 * reqsToRetry.size());
-        if (totalRetries.get() <= 0) {
-            LOG.info("Exiting, since retries are exhausted !!");
-            done = true;
-        } else {
-            amRMClient.addSchedulingRequests(reqsToRetry);
-        }*/
+        LOG.info("scheduling request rejected");
+        done.set(true);
     }
 
     @Override
     public void onShutdownRequest() {
+        LOG.info("shutdown was requested");
+        done.set(true);
     }
 
     @Override
@@ -131,7 +110,7 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
     @Override
     public void onError(Throwable e) {
         LOG.error("Error in RMCallbackHandler: ", e);
-        // done = true;
+        done.set(true);
     }
 
     public AtomicBoolean isFinished() {
