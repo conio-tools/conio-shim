@@ -37,12 +37,15 @@ import org.apache.hadoop.yarn.util.DockerClientConfigHandler;
 import org.apache.hadoop.yarn.util.resource.Resources;
 import org.conio.container.engine.ApplicationMaster;
 import org.conio.container.k8s.Pod;
-import org.conio.container.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -50,15 +53,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
+import static org.conio.container.Constants.DEFAULT_QUEUE_NAME;
+import static org.conio.container.Constants.APP_NAME;
+import static org.conio.container.Constants.APP_MASTER_JAR;
+import static org.conio.container.Constants.DEFAULT_AM_MEMORY;
+
 public class Client {
 
     private static final Logger LOG = LoggerFactory
             .getLogger(Client.class);
-
-    private static final String DEFAULT_QUEUE_NAME = "root.default";
-    private static final String APP_NAME = "CONIO";
-    private static final String APP_MASTER_JAR = "AppMaster.jar";
-    private static final int DEFAULT_AM_MEMORY = 100;
 
     private final YarnClient yarnClient;
     private final Configuration conf;
@@ -85,6 +88,7 @@ public class Client {
 
     private static Options createOptions() {
         Options opts = new Options();
+        // TODO add --watch option which waits for completion
         opts.addOption("y", "yaml", true, "the yaml file containing the description of the Kubernetes object");
         opts.addOption("q", "queue", true, "the queue this application will be submitted");
         return opts;
@@ -302,7 +306,7 @@ public class Client {
     private void addToLocalResources(FileSystem fs, String fileSrcPath,
                                      String fileDstPath, String appId, Map<String, LocalResource> localResources,
                                      String resources) throws IOException {
-        String suffix = Util.getRelativePath(APP_NAME, appId, fileDstPath);
+        String suffix = getRelativePath(APP_NAME, appId, fileDstPath);
         Path dst =
                 new Path(fs.getHomeDirectory(), suffix);
         if (fileSrcPath == null) {
@@ -324,5 +328,9 @@ public class Client {
                         LocalResourceType.FILE, LocalResourceVisibility.APPLICATION,
                         scFileStatus.getLen(), scFileStatus.getModificationTime());
         localResources.put(fileDstPath, scRsrc);
+    }
+
+    private static String getRelativePath(String appName, String appId, String fileDstPath) {
+        return appName + "/" + appId + "/" + fileDstPath;
     }
 }

@@ -36,8 +36,8 @@ public class ApplicationMaster {
 
     private final Configuration conf;
 
-    private AMRMClientAsync amRMClient;
-
+    private AMRMClientAsync<AMRMClient.ContainerRequest> amRMClient;
+    private RMCallbackHandler allocListener;
     private NMClientAsync nmClientAsync;
 
     public static void main(String[] args) throws Exception {
@@ -122,8 +122,8 @@ public class ApplicationMaster {
         nmClientAsync.init(conf);
         nmClientAsync.start();
 
-        AMRMClientAsync.AbstractCallbackHandler allocListener =
-                new RMCallbackHandler(nmClientAsync);
+        allocListener = new RMCallbackHandler(nmClientAsync);
+
         amRMClient = AMRMClientAsync.createAMRMClientAsync(1000, allocListener);
         amRMClient.init(conf);
         amRMClient.start();
@@ -142,6 +142,8 @@ public class ApplicationMaster {
         Resource resourceCapability =
                 Resource.newInstance(1000, 1);
 
+        // TODO add yaml as resource
+
         return new AMRMClient.ContainerRequest(
                 resourceCapability,
                 null, null, Priority.newInstance(0), 0, true, null,
@@ -150,57 +152,26 @@ public class ApplicationMaster {
     }
 
     private void finish() throws InterruptedException {
-        boolean done = false;
-
         // wait for completion.
-        while (!done) {
-                //&& (numCompletedContainers.get() != numTotalContainers)) {
+        while (allocListener.isFinished().get()) {
             Thread.sleep(200);
         }
 
-        // Join all launched threads
-        // needed for when we time out
-        // and we need to release containers
-        /*for (Thread launchThread : launchThreads) {
-            try {
-                launchThread.join(10000);
-            } catch (InterruptedException e) {
-                LOG.info("Exception thrown in thread join: " + e.getMessage());
-                e.printStackTrace();
-            }
-        }*/
+        LOG.info("Application completed, cleaning up");
 
         // When the application completes, it should stop all running containers
-        LOG.info("Application completed. Stopping running containers");
+        LOG.info("Stopping running containers");
         nmClientAsync.stop();
 
-        // When the application completes, it should send a finish application
-        // signal to the RM
-        LOG.info("Application completed. Signalling finished to RM");
-
-        FinalApplicationStatus appStatus;
-        boolean success = true;
-        String message = null;
-        //if (numCompletedContainers.get() - numFailedContainers.get() >= numTotalContainers) {
-            appStatus = FinalApplicationStatus.SUCCEEDED;
-        /*} else {
-            appStatus = FinalApplicationStatus.FAILED;
-            message = String.format("Application Failure: desired = %d, " +
-                            "completed = %d, allocated = %d, failed = %d, " +
-                            "diagnostics = %s", numRequestedContainers.get(),
-                    numCompletedContainers.get(), numAllocatedContainers.get(),
-                    numFailedContainers.get(), diagnostics);
-            success = false;
-        }*/
+        LOG.info("Unregistering AM");
         try {
-            amRMClient.unregisterApplicationMaster(appStatus, message, null);
-        } catch (YarnException | IOException ex) {
+            amRMClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, "containers completed", null);
+        } catch (Exception ex) {
             LOG.error("Failed to unregister application", ex);
         }
         amRMClient.stop();
     }
 
     private void cleanup() {
-        // currently we don't need any cleanup steps
     }
 }
