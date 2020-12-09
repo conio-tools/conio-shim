@@ -12,7 +12,6 @@ import org.apache.hadoop.yarn.client.api.async.NMClientAsync;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings("checkstyle:abbreviationaswordinname")
 public class NMCallbackHandler extends NMClientAsync.AbstractCallbackHandler {
   private static final Logger LOG = LoggerFactory.getLogger(NMCallbackHandler.class);
 
