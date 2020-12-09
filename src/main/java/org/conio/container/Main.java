@@ -4,10 +4,16 @@ import org.conio.container.client.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Main class which runs the client.
+ */
 public class Main {
 
   private static final Logger LOG = LoggerFactory.getLogger(Client.class);
 
+  /**
+   * Entrypoint of the program.
+   */
   public static void main(String[] args) {
     try {
       Client client = new Client();

@@ -6,5 +6,6 @@ public class Constants {
   public static final String APP_MASTER_JAR = "AppMaster.jar";
   public static final int DEFAULT_AM_MEMORY = 100;
 
-  private Constants() {}
+  private Constants() {
+  }
 }

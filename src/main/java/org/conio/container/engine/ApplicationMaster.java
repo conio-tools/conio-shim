@@ -1,5 +1,8 @@
 package org.conio.container.engine;
 
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -13,7 +16,14 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse;
-import org.apache.hadoop.yarn.api.records.*;
+import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
+import org.apache.hadoop.yarn.api.records.ApplicationId;
+import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.ExecutionType;
+import org.apache.hadoop.yarn.api.records.ExecutionTypeRequest;
+import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
+import org.apache.hadoop.yarn.api.records.Priority;
+import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.client.api.AMRMClient;
 import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.apache.hadoop.yarn.client.api.async.NMClientAsync;
@@ -24,10 +34,6 @@ import org.apache.hadoop.yarn.security.AMRMTokenIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.Map;
-
 public class ApplicationMaster {
   private static final Logger LOG = LoggerFactory.getLogger(ApplicationMaster.class);
 
@@ -35,6 +41,9 @@ public class ApplicationMaster {
   private RMCallbackHandler allocListener;
   private NMClientAsync nmClientAsync;
 
+  /**
+   * Main entrypoint of the Application Master class.
+   */
   public static void main(String[] args) throws Exception {
     ApplicationMaster appMaster = null;
     try {
@@ -56,9 +65,7 @@ public class ApplicationMaster {
     return opts;
   }
 
-  public ApplicationMaster() {}
-
-  private void init(String[] args) throws ParseException, IOException {
+  private void init(String[] args) throws ParseException {
     Options opts = createOptions();
 
     if (args.length == 0) {
@@ -85,27 +92,7 @@ public class ApplicationMaster {
 
   private void run() throws IOException, YarnException {
     // TODO token setup
-    {
-      Credentials credentials = UserGroupInformation.getCurrentUser().getCredentials();
-      DataOutputBuffer dob = new DataOutputBuffer();
-      credentials.writeTokenStorageToStream(dob);
-      // Now remove the AM->RM token so that containers cannot access it.
-      Iterator<Token<?>> iter = credentials.getAllTokens().iterator();
-      LOG.info("Executing with tokens:");
-      while (iter.hasNext()) {
-        Token<?> token = iter.next();
-        LOG.info(token.toString());
-        if (token.getKind().equals(AMRMTokenIdentifier.KIND_NAME)) {
-          iter.remove();
-        }
-      }
-      // ByteBuffer allTokens = ByteBuffer.wrap(dob.getData(), 0, dob.getLength());
-
-      String appSubmitterUserName = System.getenv(ApplicationConstants.Environment.USER.name());
-      UserGroupInformation appSubmitterUgi =
-          UserGroupInformation.createRemoteUser(appSubmitterUserName);
-      appSubmitterUgi.addCredentials(credentials);
-    }
+    tokenSetup();
 
     // if this needs to be configured, you should also that resource to the AM container context
     Configuration conf = new YarnConfiguration();
@@ -128,6 +115,28 @@ public class ApplicationMaster {
 
     AMRMClient.ContainerRequest containerAsk = setupContainerAskForRM();
     amRMClient.addContainerRequest(containerAsk);
+  }
+
+  private void tokenSetup() throws IOException {
+    Credentials credentials = UserGroupInformation.getCurrentUser().getCredentials();
+    DataOutputBuffer dob = new DataOutputBuffer();
+    credentials.writeTokenStorageToStream(dob);
+    // Now remove the AM->RM token so that containers cannot access it.
+    Iterator<Token<?>> iter = credentials.getAllTokens().iterator();
+    LOG.info("Executing with tokens:");
+    while (iter.hasNext()) {
+      Token<?> token = iter.next();
+      LOG.info(token.toString());
+      if (token.getKind().equals(AMRMTokenIdentifier.KIND_NAME)) {
+        iter.remove();
+      }
+    }
+    // ByteBuffer allTokens = ByteBuffer.wrap(dob.getData(), 0, dob.getLength());
+
+    String appSubmitterUserName = System.getenv(ApplicationConstants.Environment.USER.name());
+    UserGroupInformation appSubmitterUgi =
+        UserGroupInformation.createRemoteUser(appSubmitterUserName);
+    appSubmitterUgi.addCredentials(credentials);
   }
 
   private AMRMClient.ContainerRequest setupContainerAskForRM() {
@@ -169,5 +178,6 @@ public class ApplicationMaster {
     amRMClient.stop();
   }
 
-  private void cleanup() {}
+  private void cleanup() {
+  }
 }

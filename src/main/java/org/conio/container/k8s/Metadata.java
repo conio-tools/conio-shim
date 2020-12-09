@@ -8,7 +8,8 @@ public class Metadata {
   private Map<String, String> annotations;
   private Map<String, String> labels;
 
-  public Metadata() {}
+  public Metadata() {
+  }
 
   public String getName() {
     return name;

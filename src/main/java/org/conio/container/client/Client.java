@@ -94,6 +94,9 @@ public class Client {
     return opts;
   }
 
+  /**
+   * Initializes the client by parsing the input arguments.
+   */
   public void init(String[] args) throws ParseException, FileNotFoundException {
     if (args.length == 0) {
       throw new IllegalArgumentException("No args specified for client to initialize");
@@ -126,6 +129,9 @@ public class Client {
     LOG.info("The used image is " + pod.getSpec().getContainers().get(0).getImage());
   }
 
+  /**
+   * This client submits the application and optionally waits until it finishes successfully.
+   */
   // TODO set no retry for the AM
   public void run() throws YarnException, IOException {
     yarnClient.start();

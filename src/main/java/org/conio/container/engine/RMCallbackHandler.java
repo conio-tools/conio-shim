@@ -1,5 +1,12 @@
 package org.conio.container.engine;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -13,14 +20,6 @@ import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.apache.hadoop.yarn.client.api.async.NMClientAsync;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
   private static final Logger LOG = LoggerFactory.getLogger(RMCallbackHandler.class);
@@ -48,7 +47,6 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
         return;
       }
     }
-    Container container = allocatedContainers.get(0);
 
     ByteBuffer allTokens;
     try {
@@ -73,7 +71,7 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
     ContainerLaunchContext ctx =
         ContainerLaunchContext.newInstance(
             new HashMap<>(), env, commands, null, allTokens.duplicate(), null, null);
-    nmClientAsync.startContainerAsync(container, ctx);
+    nmClientAsync.startContainerAsync(allocatedContainers.get(0), ctx);
   }
 
   @Override
@@ -97,7 +95,8 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
   }
 
   @Override
-  public void onNodesUpdated(List<NodeReport> updatedNodes) {}
+  public void onNodesUpdated(List<NodeReport> updatedNodes) {
+  }
 
   @Override
   public float getProgress() {

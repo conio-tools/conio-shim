@@ -6,7 +6,8 @@ public class PodSpec {
   private List<Container> containers;
   private String restartPolicy;
 
-  public PodSpec() {}
+  public PodSpec() {
+  }
 
   public List<Container> getContainers() {
     return containers;

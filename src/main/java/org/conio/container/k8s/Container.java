@@ -14,7 +14,8 @@ public class Container {
   private String name;
   private ResourceRequirements resources;
 
-  public Container() {}
+  public Container() {
+  }
 
   public Map<String, String> getEnv() {
     return env;

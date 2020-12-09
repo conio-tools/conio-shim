@@ -6,7 +6,8 @@ public class ResourceRequirements {
   private Map<String, String> limits;
   private Map<String, String> requests;
 
-  public ResourceRequirements() {}
+  public ResourceRequirements() {
+  }
 
   public Map<String, String> getLimits() {
     return limits;

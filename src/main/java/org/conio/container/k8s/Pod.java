@@ -6,7 +6,8 @@ public class Pod {
   private Metadata metadata;
   private PodSpec spec;
 
-  public Pod() {}
+  public Pod() {
+  }
 
   public String getApiVersion() {
     return apiVersion;
