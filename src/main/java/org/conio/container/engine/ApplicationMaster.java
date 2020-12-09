@@ -13,10 +13,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse;
-import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
-import org.apache.hadoop.yarn.api.records.ApplicationId;
-import org.apache.hadoop.yarn.api.records.ContainerId;
-import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
+import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.client.api.AMRMClient;
 import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.apache.hadoop.yarn.client.api.async.NMClientAsync;
@@ -29,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -136,6 +134,19 @@ public class ApplicationMaster {
                 .registerApplicationMaster(appMasterHostname, -1,
                         "", null);
 
+        AMRMClient.ContainerRequest containerAsk = setupContainerAskForRM();
+        amRMClient.addContainerRequest(containerAsk);
+    }
+
+    private AMRMClient.ContainerRequest setupContainerAskForRM() {
+        Resource resourceCapability =
+                Resource.newInstance(1000, 1);
+
+        return new AMRMClient.ContainerRequest(
+                resourceCapability,
+                null, null, Priority.newInstance(0), 0, true, null,
+                ExecutionTypeRequest.newInstance(ExecutionType.GUARANTEED, false),
+                "");
     }
 
     private void finish() throws InterruptedException {

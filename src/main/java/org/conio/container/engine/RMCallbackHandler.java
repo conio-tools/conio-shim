@@ -1,23 +1,28 @@
 package org.conio.container.engine;
 
-import com.google.common.annotations.VisibleForTesting;
+import io.netty.buffer.ByteBuf;
+import org.apache.hadoop.io.DataOutputBuffer;
+import org.apache.hadoop.security.Credentials;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.api.records.Container;
-import org.apache.hadoop.yarn.api.records.ContainerExitStatus;
-import org.apache.hadoop.yarn.api.records.ContainerState;
+import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
+import org.apache.hadoop.yarn.api.records.LocalResource;
 import org.apache.hadoop.yarn.api.records.NodeReport;
 import org.apache.hadoop.yarn.api.records.RejectedSchedulingRequest;
-import org.apache.hadoop.yarn.api.records.SchedulingRequest;
 import org.apache.hadoop.yarn.api.records.UpdatedContainer;
-import org.apache.hadoop.yarn.client.api.AMRMClient;
 import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.apache.hadoop.yarn.client.api.async.NMClientAsync;
-import org.apache.hadoop.yarn.util.SystemClock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
+import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 // TODO reimplement these
 public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
@@ -173,6 +178,32 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
                 }
             }
         }*/
+
+        ByteBuffer allTokens;
+        try {
+            Credentials credentials =
+                    UserGroupInformation.getCurrentUser().getCredentials();
+            DataOutputBuffer dob = new DataOutputBuffer();
+            credentials.writeTokenStorageToStream(dob);
+            allTokens = ByteBuffer.wrap(dob.getData(), 0, dob.getLength());
+        } catch (IOException ioe) {
+            throw new RuntimeException("unexpected exception", ioe);
+        }
+
+        List<String> commands = Arrays.asList("sleep", "60");
+        for (Container container : allocatedContainers) {
+
+            Map<String, String> env = new HashMap<String, String>();
+            env.put("YARN_CONTAINER_RUNTIME_TYPE", "docker");
+            env.put("YARN_CONTAINER_RUNTIME_DOCKER_IMAGE", "library/ubuntu:latest");
+            env.put("YARN_CONTAINER_RUNTIME_DOCKER_RUN_OVERRIDE_DISABLE", "true");
+            env.put("YARN_CONTAINER_RUNTIME_DOCKER_DELAYED_REMOVAL", "true");
+
+            ContainerLaunchContext ctx = ContainerLaunchContext.newInstance(
+                    new HashMap<String, LocalResource>(), env, commands, null, allTokens.duplicate(),
+                    null, null);
+            nmClientAsync.startContainerAsync(container, ctx);
+        }
     }
 
     @Override
