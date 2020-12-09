@@ -14,61 +14,56 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class NMCallbackHandler extends NMClientAsync.AbstractCallbackHandler {
-    private static final Logger LOG =
-            LoggerFactory.getLogger(NMCallbackHandler.class);
+  private static final Logger LOG = LoggerFactory.getLogger(NMCallbackHandler.class);
 
-    private final ConcurrentMap<ContainerId, Container> containers = new ConcurrentHashMap<>();
+  private final ConcurrentMap<ContainerId, Container> containers = new ConcurrentHashMap<>();
 
-    public NMCallbackHandler() {
-    }
+  public NMCallbackHandler() {}
 
-    @Override
-    public void onContainerStopped(ContainerId containerId) {
-        LOG.debug("Container {} stopped", containerId);
-        containers.remove(containerId);
-    }
+  @Override
+  public void onContainerStopped(ContainerId containerId) {
+    LOG.debug("Container {} stopped", containerId);
+    containers.remove(containerId);
+  }
 
-    @Override
-    public void onContainerStatusReceived(ContainerId containerId, ContainerStatus containerStatus) {
-        LOG.debug("Container Status: id={}, status={}", containerId, containerStatus);
-    }
+  @Override
+  public void onContainerStatusReceived(ContainerId containerId, ContainerStatus containerStatus) {
+    LOG.debug("Container Status: id={}, status={}", containerId, containerStatus);
+  }
 
-    @Override
-    public void onContainerStarted(ContainerId containerId,
-                                   Map<String, ByteBuffer> allServiceResponse) {
-        LOG.debug("Started container {}", containerId);
-    }
+  @Override
+  public void onContainerStarted(
+      ContainerId containerId, Map<String, ByteBuffer> allServiceResponse) {
+    LOG.debug("Started container {}", containerId);
+  }
 
-    @Override
-    public void onStartContainerError(ContainerId containerId, Throwable t) {
-        LOG.error("Failed to start Container {}", containerId, t);
-    }
+  @Override
+  public void onStartContainerError(ContainerId containerId, Throwable t) {
+    LOG.error("Failed to start Container {}", containerId, t);
+  }
 
-    @Override
-    public void onGetContainerStatusError(
-            ContainerId containerId, Throwable t) {
-        LOG.error("Failed to query the status of Container " + containerId);
-    }
+  @Override
+  public void onGetContainerStatusError(ContainerId containerId, Throwable t) {
+    LOG.error("Failed to query the status of Container " + containerId);
+  }
 
-    @Override
-    public void onStopContainerError(ContainerId containerId, Throwable t) {
-        LOG.error("Failed to stop Container " + containerId);
-        containers.remove(containerId);
-    }
+  @Override
+  public void onStopContainerError(ContainerId containerId, Throwable t) {
+    LOG.error("Failed to stop Container " + containerId);
+    containers.remove(containerId);
+  }
 
-    @Deprecated
-    @Override
-    public void onIncreaseContainerResourceError(ContainerId containerId, Throwable t) {}
+  @Deprecated
+  @Override
+  public void onIncreaseContainerResourceError(ContainerId containerId, Throwable t) {}
 
-    @Deprecated
-    @Override
-    public void onContainerResourceIncreased(ContainerId containerId, Resource resource) {}
+  @Deprecated
+  @Override
+  public void onContainerResourceIncreased(ContainerId containerId, Resource resource) {}
 
-    @Override
-    public void onUpdateContainerResourceError(ContainerId containerId, Throwable t) {
-    }
+  @Override
+  public void onUpdateContainerResourceError(ContainerId containerId, Throwable t) {}
 
-    @Override
-    public void onContainerResourceUpdated(ContainerId containerId, Resource resource) {
-    }
+  @Override
+  public void onContainerResourceUpdated(ContainerId containerId, Resource resource) {}
 }

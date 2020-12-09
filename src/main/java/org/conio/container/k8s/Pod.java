@@ -1,43 +1,42 @@
 package org.conio.container.k8s;
 
 public class Pod {
-    private String apiVersion;
-    private String kind;
-    private Metadata metadata;
-    private PodSpec spec;
+  private String apiVersion;
+  private String kind;
+  private Metadata metadata;
+  private PodSpec spec;
 
-    public Pod() {
-    }
+  public Pod() {}
 
-    public String getApiVersion() {
-        return apiVersion;
-    }
+  public String getApiVersion() {
+    return apiVersion;
+  }
 
-    public void setApiVersion(String apiVersion) {
-        this.apiVersion = apiVersion;
-    }
+  public void setApiVersion(String apiVersion) {
+    this.apiVersion = apiVersion;
+  }
 
-    public String getKind() {
-        return kind;
-    }
+  public String getKind() {
+    return kind;
+  }
 
-    public void setKind(String kind) {
-        this.kind = kind;
-    }
+  public void setKind(String kind) {
+    this.kind = kind;
+  }
 
-    public Metadata getMetadata() {
-        return metadata;
-    }
+  public Metadata getMetadata() {
+    return metadata;
+  }
 
-    public void setMetadata(Metadata metadata) {
-        this.metadata = metadata;
-    }
+  public void setMetadata(Metadata metadata) {
+    this.metadata = metadata;
+  }
 
-    public PodSpec getSpec() {
-        return spec;
-    }
+  public PodSpec getSpec() {
+    return spec;
+  }
 
-    public void setSpec(PodSpec spec) {
-        this.spec = spec;
-    }
+  public void setSpec(PodSpec spec) {
+    this.spec = spec;
+  }
 }
