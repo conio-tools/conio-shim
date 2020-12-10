@@ -63,7 +63,7 @@ A suitable choice is [big-data-europe/docker-hadoop](https://github.com/big-data
 Note: it should be used with Dind containers
 
 ```bash
-docker run -it -a stdin -a stdout -a stderr --env-file hadoop.env --network docker-hadoop_default conio/base:master -- sudo -u conio java -jar /conio/conio-1.0-SNAPSHOT-jar-with-dependencies.jar -yaml /conio/pod.yaml --queue default
+docker run -it -a stdin -a stdout -a stderr --env-file hadoop.env --network docker-hadoop_default -v $(PWD)/conio:/conio conio/base:master -- sudo -u conio java -jar /conio/conio-1.0-SNAPSHOT-jar-with-dependencies.jar -yaml /conio/pod.yaml --queue default
 ```
 
 #### Container failure due to mount denied

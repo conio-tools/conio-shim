@@ -49,7 +49,14 @@ public class Pod {
     this.kind = kind;
   }
 
+  /**
+   * Returns the metadata of the pod.
+   * Throws RuntimeException if the metadata is null.
+   */
   public Metadata getMetadata() {
+    if (metadata == null) {
+      throw new RuntimeException("Metadata field is null");
+    }
     return metadata;
   }
 

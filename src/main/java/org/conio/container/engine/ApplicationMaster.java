@@ -111,9 +111,11 @@ public class ApplicationMaster {
     String[] localDirs = StringUtils.getTrimmedStrings(
             System.getenv(ApplicationConstants.Environment.LOCAL_DIRS.key()));
     String containerId = System.getenv(ApplicationConstants.Environment.CONTAINER_ID.key());
-    Path path = new Path(localDirs[0], containerId);
+
+    Path path = new Path(new Path(localDirs[0], containerId), "pod.yaml");
     fs.copyToLocalFile(new Path(yamlHdfsPath), path);
     pod = Pod.parseFromFile(path.toString());
+    LOG.info("Loaded pod {}", pod.getMetadata().getName());
 
     NMCallbackHandler containerListener = new NMCallbackHandler();
     nmClientAsync = new NMClientAsyncImpl(containerListener);
@@ -176,7 +178,7 @@ public class ApplicationMaster {
 
   private void finish() throws InterruptedException {
     // wait for completion
-    while (allocListener.isFinished().get()) {
+    while (!allocListener.isFinished().get()) {
       Thread.sleep(200);
     }
 

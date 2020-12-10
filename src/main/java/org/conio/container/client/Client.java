@@ -7,11 +7,8 @@ import static org.conio.container.Constants.DEFAULT_AM_MEMORY;
 import static org.conio.container.Constants.DEFAULT_QUEUE_NAME;
 import static org.conio.container.Constants.ENV_YAML_HDFS_PATH;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -57,7 +54,6 @@ import org.conio.container.engine.ApplicationMaster;
 import org.conio.container.k8s.Pod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.yaml.snakeyaml.Yaml;
 
 public class Client {
 
@@ -107,17 +103,13 @@ public class Client {
     CommandLine cliParser = new GnuParser().parse(opts, args);
 
     yamlFile = cliParser.getOptionValue("yaml");
-    parseYaml();
+    pod = Pod.parseFromFile(yamlFile);
+    LOG.info("The used image is " + pod.getSpec().getContainers().get(0).getImage());
 
     String configuredQueue = cliParser.getOptionValue("queue");
     if (configuredQueue != null) {
       queueName = configuredQueue;
     }
-  }
-
-  private void parseYaml() throws FileNotFoundException {
-    Pod pod = Pod.parseFromFile(yamlFile);
-    LOG.info("The used image is " + pod.getSpec().getContainers().get(0).getImage());
   }
 
   /** This client submits the application and optionally waits until it finishes successfully. */
