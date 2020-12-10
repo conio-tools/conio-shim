@@ -1,5 +1,8 @@
 package org.conio.container.engine;
 
+import static org.conio.container.Constants.ENV_YAML_HDFS_PATH;
+
+import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
@@ -9,11 +12,14 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
+import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
@@ -31,6 +37,7 @@ import org.apache.hadoop.yarn.client.api.async.impl.NMClientAsyncImpl;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.security.AMRMTokenIdentifier;
+import org.conio.container.k8s.Pod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +47,8 @@ public class ApplicationMaster {
   private AMRMClientAsync<AMRMClient.ContainerRequest> amRMClient;
   private RMCallbackHandler allocListener;
   private NMClientAsync nmClientAsync;
+
+  private Pod pod;
 
   /**
    * Main entrypoint of the Application Master class.
@@ -97,12 +106,21 @@ public class ApplicationMaster {
     // if this needs to be configured, you should also that resource to the AM container context
     Configuration conf = new YarnConfiguration();
 
+    String yamlHdfsPath = System.getenv(ENV_YAML_HDFS_PATH);
+    FileSystem fs = FileSystem.get(conf);
+    String[] localDirs = StringUtils.getTrimmedStrings(
+            System.getenv(ApplicationConstants.Environment.LOCAL_DIRS.key()));
+    String containerId = System.getenv(ApplicationConstants.Environment.CONTAINER_ID.key());
+    Path path = new Path(localDirs[0], containerId);
+    fs.copyToLocalFile(new Path(yamlHdfsPath), path);
+    pod = Pod.parseFromFile(path.toString());
+
     NMCallbackHandler containerListener = new NMCallbackHandler();
     nmClientAsync = new NMClientAsyncImpl(containerListener);
     nmClientAsync.init(conf);
     nmClientAsync.start();
 
-    allocListener = new RMCallbackHandler(nmClientAsync);
+    allocListener = new RMCallbackHandler(this, nmClientAsync);
 
     amRMClient = AMRMClientAsync.createAMRMClientAsync(1000, allocListener);
     amRMClient.init(conf);
@@ -179,5 +197,9 @@ public class ApplicationMaster {
   }
 
   private void cleanup() {
+  }
+
+  Pod getPod() {
+    return pod;
   }
 }

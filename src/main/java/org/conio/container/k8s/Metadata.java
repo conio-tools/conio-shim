@@ -3,6 +3,8 @@ package org.conio.container.k8s;
 import java.util.Map;
 
 public class Metadata {
+  private static final String DEFAULT_NAMESPACE = "default";
+
   private String name;
   private String namespace;
   private Map<String, String> annotations;
@@ -25,6 +27,18 @@ public class Metadata {
 
   public void setNamespace(String namespace) {
     this.namespace = namespace;
+  }
+
+  /**
+   * Get the non-null namespace of this object.
+   */
+  public String getExactNamespace() {
+    String namespace = getNamespace();
+    if (namespace == null) {
+      return DEFAULT_NAMESPACE;
+    } else {
+      return namespace;
+    }
   }
 
   public Map<String, String> getAnnotations() {

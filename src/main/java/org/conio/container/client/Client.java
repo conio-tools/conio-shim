@@ -2,8 +2,10 @@ package org.conio.container.client;
 
 import static org.conio.container.Constants.APP_MASTER_JAR;
 import static org.conio.container.Constants.APP_NAME;
+import static org.conio.container.Constants.CONIO_HDFS_ROOT;
 import static org.conio.container.Constants.DEFAULT_AM_MEMORY;
 import static org.conio.container.Constants.DEFAULT_QUEUE_NAME;
+import static org.conio.container.Constants.ENV_YAML_HDFS_PATH;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -72,6 +74,8 @@ public class Client {
   private String yamlFile;
   private String queueName = DEFAULT_QUEUE_NAME;
 
+  private Pod pod;
+
   /** Client is the entrypoint of the tool. */
   public Client() {
     conf = new YarnConfiguration();
@@ -94,9 +98,7 @@ public class Client {
     return opts;
   }
 
-  /**
-   * Initializes the client by parsing the input arguments.
-   */
+  /** Initializes the client by parsing the input arguments. */
   public void init(String[] args) throws ParseException, FileNotFoundException {
     if (args.length == 0) {
       throw new IllegalArgumentException("No args specified for client to initialize");
@@ -105,14 +107,6 @@ public class Client {
     CommandLine cliParser = new GnuParser().parse(opts, args);
 
     yamlFile = cliParser.getOptionValue("yaml");
-    if (yamlFile == null || yamlFile.isEmpty()) {
-      throw new IllegalArgumentException("Empty yaml file provided as input");
-    }
-    File file = new File(yamlFile);
-    if (!file.exists()) {
-      throw new IllegalArgumentException("");
-    }
-
     parseYaml();
 
     String configuredQueue = cliParser.getOptionValue("queue");
@@ -122,16 +116,11 @@ public class Client {
   }
 
   private void parseYaml() throws FileNotFoundException {
-    Yaml yaml = new Yaml();
-    InputStream inputStream = new FileInputStream(yamlFile);
-
-    Pod pod = yaml.loadAs(inputStream, Pod.class);
+    Pod pod = Pod.parseFromFile(yamlFile);
     LOG.info("The used image is " + pod.getSpec().getContainers().get(0).getImage());
   }
 
-  /**
-   * This client submits the application and optionally waits until it finishes successfully.
-   */
+  /** This client submits the application and optionally waits until it finishes successfully. */
   // TODO set no retry for the AM
   public void run() throws YarnException, IOException {
     yarnClient.start();
@@ -170,10 +159,11 @@ public class Client {
         fs, appMasterJar, APP_MASTER_JAR, applicationId.toString(), localResources, null);
 
     // TODO: support localizable files
+    // TODO upload yaml to HDFS
+    String yamlHDFSPath = uploadYamlToHDFS();
 
     Map<String, String> env = new HashMap<String, String>();
-    // TODO think about this part
-    // env.put("", "");
+    env.put(ENV_YAML_HDFS_PATH, yamlHDFSPath);
 
     setupAppMasterJar(env);
 
@@ -185,6 +175,24 @@ public class Client {
 
     ApplicationMonitor monitor = new ApplicationMonitor(yarnClient, applicationId, clientStartTime);
     monitor.run();
+  }
+
+  private String uploadYamlToHDFS() throws IOException {
+    Path shellSrc = new Path(yamlFile);
+    FileSystem fs = FileSystem.get(conf);
+    Path shellDst = getPathForYaml(pod);
+    fs.copyFromLocalFile(false, true, shellSrc, shellDst);
+    return shellDst.toUri().toString();
+  }
+
+  private Path getPathForYaml(Pod pod) {
+    Path podTypePath =
+        new Path(new Path(CONIO_HDFS_ROOT, pod.getMetadata().getExactNamespace()), "pod");
+    String podName = pod.getMetadata().getName();
+    if (podName == null) {
+      throw new IllegalArgumentException("Pod name is null");
+    }
+    return new Path(podTypePath, podName);
   }
 
   private void setupAppMasterCommand(

@@ -18,16 +18,19 @@ import org.apache.hadoop.yarn.api.records.RejectedSchedulingRequest;
 import org.apache.hadoop.yarn.api.records.UpdatedContainer;
 import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.apache.hadoop.yarn.client.api.async.NMClientAsync;
+import org.conio.container.k8s.Pod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
   private static final Logger LOG = LoggerFactory.getLogger(RMCallbackHandler.class);
 
+  private final ApplicationMaster am;
   private final NMClientAsync nmClientAsync;
   private final AtomicBoolean done;
 
-  RMCallbackHandler(NMClientAsync nmClientAsync) {
+  RMCallbackHandler(ApplicationMaster am, NMClientAsync nmClientAsync) {
+    this.am = am;
     this.nmClientAsync = nmClientAsync;
     this.done = new AtomicBoolean(false);
   }
@@ -58,14 +61,15 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
       throw new RuntimeException("unexpected exception", ioe);
     }
 
-    // TODO parameterize these
-    List<String> commands = Arrays.asList("sleep", "60");
-    String image = "library/ubuntu:latest";
+    Pod pod = am.getPod();
+    List<String> commands = pod.getSpec().getContainers().get(0).getCommand();
+    String image = pod.getSpec().getContainers().get(0).getImage();
 
     Map<String, String> env = new HashMap<>();
     env.put("YARN_CONTAINER_RUNTIME_TYPE", "docker");
     env.put("YARN_CONTAINER_RUNTIME_DOCKER_IMAGE", image);
     env.put("YARN_CONTAINER_RUNTIME_DOCKER_RUN_OVERRIDE_DISABLE", "true");
+    // TODO parameterize this
     env.put("YARN_CONTAINER_RUNTIME_DOCKER_DELAYED_REMOVAL", "true");
 
     ContainerLaunchContext ctx =
