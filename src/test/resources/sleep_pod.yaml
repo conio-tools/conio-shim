@@ -12,4 +12,11 @@ spec:
         - "60"
       imagePullPolicy: IfNotPresent
       name: sleep-container
+      resources:
+        limits:
+          cpu: 1
+          memory: 200Mi
+        requests:
+          cpu: 500m
+          memory: 100Mi
   restartPolicy: Never

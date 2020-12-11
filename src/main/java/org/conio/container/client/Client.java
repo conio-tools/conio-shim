@@ -68,8 +68,6 @@ public class Client {
   private final Configuration conf;
   private final Options opts;
 
-  private final long clientStartTime = System.currentTimeMillis();
-
   private String appMasterJar = "/conio/conio-1.0-SNAPSHOT-jar-with-dependencies.jar";
   private String dockerClientConfig;
   private String yamlFile;
@@ -173,8 +171,7 @@ public class Client {
     yarnClient.submitApplication(appContext);
 
     if (watch) {
-      ApplicationMonitor monitor = new ApplicationMonitor(yarnClient,
-          applicationId, clientStartTime);
+      ApplicationMonitor monitor = new ApplicationMonitor(yarnClient, applicationId);
       monitor.run();
     }
   }

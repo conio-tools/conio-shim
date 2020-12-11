@@ -13,19 +13,18 @@ import org.slf4j.LoggerFactory;
 public class ApplicationMonitor {
   private static final Logger LOG = LoggerFactory.getLogger(ApplicationMonitor.class);
 
+  private static final int SLEEP_TIME = 1000;
   private static final int TIMEOUT = 600000;
 
   private final YarnClient yarnClient;
   private final ApplicationId appId;
-  private final long clientStartTime;
 
   /**
    * ApplicationMonitor monitors the application, periodically querying application state from YARN.
    */
-  public ApplicationMonitor(YarnClient client, ApplicationId appId, long clientStartTime) {
+  public ApplicationMonitor(YarnClient client, ApplicationId appId) {
     this.yarnClient = client;
     this.appId = appId;
-    this.clientStartTime = clientStartTime;
   }
 
   // is a blocking command
@@ -34,10 +33,11 @@ public class ApplicationMonitor {
   }
 
   private void monitorApplication() throws YarnException, IOException {
+    long clientStartTime = System.currentTimeMillis();
     while (true) {
       // Check app status every 1 second.
       try {
-        Thread.sleep(1000);
+        Thread.sleep(SLEEP_TIME);
       } catch (InterruptedException e) {
         LOG.debug("Thread sleep in monitoring loop interrupted");
         break;
@@ -61,7 +61,7 @@ public class ApplicationMonitor {
                   + ". Breaking monitoring loop");
         }
         return;
-      } else if (YarnApplicationState.KILLED == state || YarnApplicationState.FAILED == state) {
+      } else if (state == YarnApplicationState.KILLED || state == YarnApplicationState.FAILED) {
         LOG.warn(
             "Application did not finish."
                 + " YarnState="

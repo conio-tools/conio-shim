@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNull;
 
 import com.google.common.collect.ImmutableList;
 import java.io.FileNotFoundException;
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
 
@@ -34,6 +35,15 @@ public class TestPod {
     assertEquals("busybox", container.getImage());
     assertEquals("IfNotPresent", container.getImagePullPolicy());
     assertEquals("sleep-container", container.getName());
-    assertNull(container.getResources());
+    // resources
+    Map<String, String> limits = new HashMap<>();
+    limits.put("cpu", "1");
+    limits.put("memory", "200Mi");
+    Map<String, String> requests = new HashMap<>();
+    requests.put("cpu", "500m");
+    requests.put("memory", "100Mi");
+    ResourceRequirements resources = container.getResources();
+    assertEquals(resources.getLimits(), limits);
+    assertEquals(resources.getRequests(), requests);
   }
 }
