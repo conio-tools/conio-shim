@@ -6,6 +6,7 @@ import static org.conio.container.Constants.CONIO_HDFS_ROOT;
 import static org.conio.container.Constants.DEFAULT_AM_MEMORY;
 import static org.conio.container.Constants.DEFAULT_QUEUE_NAME;
 import static org.conio.container.Constants.ENV_YAML_HDFS_PATH;
+import static org.conio.container.Constants.TYPE_POD;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -59,6 +60,10 @@ public class Client {
 
   private static final Logger LOG = LoggerFactory.getLogger(Client.class);
 
+  private static final String QUEUE_OPT = "queue";
+  private static final String WATCH_OPT = "watch";
+  private static final String YAML_OPT = "yaml";
+
   private final YarnClient yarnClient;
   private final Configuration conf;
   private final Options opts;
@@ -71,6 +76,7 @@ public class Client {
   private String queueName = DEFAULT_QUEUE_NAME;
 
   private Pod pod;
+  private boolean watch;
 
   /** Client is the entrypoint of the tool. */
   public Client() {
@@ -87,10 +93,10 @@ public class Client {
 
   private static Options createOptions() {
     Options opts = new Options();
-    // TODO add --watch option which waits for completion
+    opts.addOption("q", QUEUE_OPT, true, "the queue this application will be submitted");
+    opts.addOption("w", WATCH_OPT, false, "watches the application until termination");
     opts.addOption(
-        "y", "yaml", true, "the yaml file containing the description of the Kubernetes object");
-    opts.addOption("q", "queue", true, "the queue this application will be submitted");
+        "y", YAML_OPT, true, "the yaml file containing the description of the Kubernetes object");
     return opts;
   }
 
@@ -102,11 +108,12 @@ public class Client {
 
     CommandLine cliParser = new GnuParser().parse(opts, args);
 
-    yamlFile = cliParser.getOptionValue("yaml");
+    yamlFile = cliParser.getOptionValue(YAML_OPT);
+    watch = cliParser.hasOption(WATCH_OPT);
     pod = Pod.parseFromFile(yamlFile);
     LOG.info("The used image is " + pod.getSpec().getContainers().get(0).getImage());
 
-    String configuredQueue = cliParser.getOptionValue("queue");
+    String configuredQueue = cliParser.getOptionValue(QUEUE_OPT);
     if (configuredQueue != null) {
       queueName = configuredQueue;
     }
@@ -134,7 +141,7 @@ public class Client {
     appContext.setKeepContainersAcrossApplicationAttempts(false);
 
     // setting the name of the application
-    String appName = APP_NAME;
+    String appName = createAppName();
     appContext.setApplicationName(appName);
 
     // we might need this later
@@ -165,8 +172,11 @@ public class Client {
 
     yarnClient.submitApplication(appContext);
 
-    ApplicationMonitor monitor = new ApplicationMonitor(yarnClient, applicationId, clientStartTime);
-    monitor.run();
+    if (watch) {
+      ApplicationMonitor monitor = new ApplicationMonitor(yarnClient,
+          applicationId, clientStartTime);
+      monitor.run();
+    }
   }
 
   private String uploadYamlToHDFS() throws IOException {
@@ -354,5 +364,10 @@ public class Client {
 
   private static String getRelativePath(String appName, String appId, String fileDstPath) {
     return appName + "/" + appId + "/" + fileDstPath;
+  }
+
+  private String createAppName() {
+    return String.format("%s/%s/%s/%s", APP_NAME, TYPE_POD,
+        pod.getMetadata().getExactNamespace(), pod.getMetadata().getName());
   }
 }
