@@ -38,6 +38,7 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.security.AMRMTokenIdentifier;
 import org.conio.container.k8s.Pod;
+import org.conio.container.k8s.ResourceRequirements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -160,12 +161,10 @@ public class ApplicationMaster {
   }
 
   private AMRMClient.ContainerRequest setupContainerAskForRM() {
-    Resource resourceCapability = Resource.newInstance(1000, 1);
-
-    // TODO add yaml as resource
+    // TODO add yaml as resource?
 
     return new AMRMClient.ContainerRequest(
-        resourceCapability,
+        Translate.translateResourceRequirements(pod),
         null,
         null,
         Priority.newInstance(0),
