@@ -6,10 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import org.yaml.snakeyaml.Yaml;
 
-public class Pod {
-  private String apiVersion;
-  private String kind;
-  private Metadata metadata;
+public class Pod extends Object {
   private PodSpec spec;
 
   public Pod() {
@@ -31,37 +28,6 @@ public class Pod {
     InputStream inputStream = new FileInputStream(yamlFile);
 
     return yaml.loadAs(inputStream, Pod.class);
-  }
-
-  public String getApiVersion() {
-    return apiVersion;
-  }
-
-  public void setApiVersion(String apiVersion) {
-    this.apiVersion = apiVersion;
-  }
-
-  public String getKind() {
-    return kind;
-  }
-
-  public void setKind(String kind) {
-    this.kind = kind;
-  }
-
-  /**
-   * Returns the metadata of the pod.
-   * Throws RuntimeException if the metadata is null.
-   */
-  public Metadata getMetadata() {
-    if (metadata == null) {
-      throw new RuntimeException("Metadata field is null");
-    }
-    return metadata;
-  }
-
-  public void setMetadata(Metadata metadata) {
-    this.metadata = metadata;
   }
 
   public PodSpec getSpec() {
