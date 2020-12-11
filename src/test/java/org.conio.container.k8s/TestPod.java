@@ -11,7 +11,7 @@ import org.junit.Test;
 public class TestPod {
   @Test
   public void testParseFromFile() throws FileNotFoundException {
-    Pod pod = Pod.parseFromFile("src/main/resources/sleep_pod.yaml");
+    Pod pod = Pod.parseFromFile("src/test/resources/sleep_pod.yaml");
 
     // object
     Metadata meta = pod.getMetadata();
