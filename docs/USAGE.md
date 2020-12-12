@@ -25,7 +25,7 @@ java -jar conio-1.0-SNAPSHOT-jar-with-dependencies.jar -yaml k8s-obj.yaml
 ## Using Dockerized Hadoop
 
 - Set up any dockerized Hadoop solution and configure it according to the Pseudo distributed mode
-- _or_ use the [conio-nano]() project which is a fork of [big-data-europe/docker-hadoop](https://github.com/big-data-europe/docker-hadoop) with the same configurations as above, but suited for this project. 
+- _or_ use the [conio-nano](https://github.com/conio-tools/conio-nano) project which is a fork of [big-data-europe/docker-hadoop](https://github.com/big-data-europe/docker-hadoop) with the same configurations as above, but suited for this project. 
 
 If you use Conio-nano, you are probably going to need a similar command to start the Conio client in a Docker container that has the required files mounted in the container:
 ```bash
