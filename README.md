@@ -10,11 +10,20 @@ The purpose of the Conio shim layer is to translate various Kubernetes objects (
 
 Disclaimer: this tool is in alpha stage and under heavy development. It hasn't been tested thoroughly yet, and you should use with extreme care.  
 
+## Usage
+
+You can read it [here](/docs/USAGE.md) how to run Conio locally. 
+
+## Roadmap
+
+The tool is currently in pre-alpha stage. You can check the roadmap [here](docs/ROADMAP.md).
+
 ## Motivation
 
 So first of all: why on earth would you want to do this?
 
 ### Cons
+
 - Kubernetes has a tremendously different set of features:
   - By building a bridge between these two frameworks there are some feature differences that can never be mitigated. A few of the most important differences with regard to Conio:
     - _Services_: Hadoop provides no support for creating services, proxying or any kind of network management. Any service related configurations in your yaml files will be omitted, as Conio could not .
@@ -54,11 +63,3 @@ For Hadoop the Docker on YARN support is a hard requirement, so the Hadoop 3.1 i
 There are numerous changes and bugfixes in 3.2, so I recommend 3.2<=. The tool is primarily tested against 3.2.1.   
 
 There is currently no limitation for the Kubernetes version. 
-
-## Usage
-
-You can read it [here](/docs/USAGE.md) how to run Conio locally. 
-
-## Roadmap
-
-The tool is currently in pre-alpha stage. You can check the roadmap [here](docs/ROADMAP.md).
