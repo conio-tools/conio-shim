@@ -8,7 +8,7 @@ Conio \[Italian:co·nì·glio\] is the abbreviation of Container Orchestrator Ne
  
 The purpose of the Conio shim layer is to translate various Kubernetes objects (starting from simple Pod definitions to complex Helm charts) to Hadoop-compatible (YARN) applications.
 
-Disclaimer: this tool is in alpha stage and under heavy development. It hasn't been tested thoroughly yet, and you should use with extreme care.  
+Disclaimer: this tool is in pre-alpha stage and under heavy development. It hasn't been tested thoroughly yet, and you should use with extreme care.  
 
 ## Usage
 
