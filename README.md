@@ -1,92 +1,64 @@
-# CONIO
+# Conio shim
 
 <!--
 TODO: CONIO LOGO??
 -->
 
-Conio \[Italian:co·nì·glio\] is the shortand of Container Orchestrator Network's InterOperability tool.
-It's primary purpose to provide a way to translate various Kubernetes objects (from simple Pod definitions to Helm charts) to Hadoop-compatible (YARN) applications.
+Conio \[Italian:co·nì·glio\] is the abbreviation of Container Orchestrator Network's InterOperability tools. Conio is a set of tools providing interoperability between different container orchestrators like Hadoop YARN and Kubernetes.
+ 
+The purpose of the Conio shim layer is to translate various Kubernetes objects (starting from simple Pod definitions to complex Helm charts) to Hadoop-compatible (YARN) applications.
 
-## TODOs / Roadmap for 1.0 release
+Disclaimer: this tool is in alpha stage and under heavy development. It hasn't been tested thoroughly yet, and you should use with extreme care.  
 
-- Add Travis integration
-- Create configuration for Conio
-- Create a list for supported version (both Hadoop and Kubernetes)
-- Add unit tests
-- Add MiniYARNCluster tests
-- Add instructions for local runs
-- Add performance tests (comparing to kubemark?)
+## Motivation
 
-## Configuration
+So first of all: why on earth would you want to do this?
 
-<!--
-TODO: write this part
+### Cons
+- Kubernetes has a tremendously different set of features:
+  - By building a bridge between these two frameworks there are some feature differences that can never be mitigated. A few of the most important differences with regard to Conio:
+    - _Services_: Hadoop provides no support for creating services, proxying or any kind of network management. Any service related configurations in your yaml files will be omitted, as Conio could not .
+    - _Controller pattern_: There is large number of software written to Kubernetes to manage certain resources and workloads. 
+    Conio does not fully translate of the communication with the API server in the Hadoop environment (for the YARN ResourceManager and NodeManagers). 
+    Controllers written for Kubernetes could not be interpreted in Hadoop.  
+    - _Autoscaling_: Hadoop is **not** cloud native, so it has limitations regarding flexibility.
+    - _Storage_: Hadoop's Distributed FileSystem is a very different than any on-demand or dynamically provisioned volume/claim and mount in Kubernetes. The list of differences is long, but most of the Volume related configurations are not supported in Hadoop.    
+- Docker on YARN provides only a limited set of features from the Docker ecosystem, and Hadoop is missing important container technologies, like the CRI standard.
+- Though there are some ongoing efforts, currently Hadoop is not very elastic, and is not cloud native at all.
+- The common "popularity" card: Kubernetes is a rapidly growing ecosystem right now, and Hadoop is gathering less attention (2020). 
+Generally it is wiser to leverage the most recent/active stack with all its quickly evolving improvements, if you have general purposes. 
 
-we probably need these configurations:
-- what queue should the app be placed in?
-  this can be something like: static:"root.conio" or dynamic:"root."+namespace
--
--->
+### Pros
+
+From the cons above the ideal workloads that fit this project are primarily batch jobs that requires no communication, or general network communication with external services.
+
+Usually the containerized workloads that:
+- run for a while 
+- has some input that is given during start
+- run processing without interaction 
+- dumps its output to some location
+
+can be most probably translatable.
+ 
+This project might be a good choice if:
+- You are moving from a Hadoop-based on prem setup to the cloud, but sometimes need backward compatibility when running primarily batch jobs
+- You have large on-prem clusters where you want to have the same client-side flexibility that Kubernetes provides, but:
+  - moving to the cloud is not suitable (e.g. security concerns against public/hybrid cloud)
+  - moving to on-prem Kubernetes is not a suitable choice (e.g. lagging-in-tech corporations, company policy, IT decisions) 
+- You would like to leverage an existing Hadoop YARN feature for workload management (e.g. highly configurable and efficient scheduler).
 
 ## Supported Hadoop and Kubernetes version
 
-Hadoop: 3.3.0
+For Hadoop the Docker on YARN support is a hard requirement, so the Hadoop 3.1 is the minimum required version.
 
-## Run locally
+There are numerous changes and bugfixes in 3.2, so I recommend 3.2<=. The tool is primarily tested against 3.2.1.   
 
-You can run Conio on Hadoop natively or in Docker containers. 
+There is currently no limitation for the Kubernetes version. 
 
-### Pseudo distributed mode (Single node setup)
+## Usage
 
-Note: Conio on Hadoop requires natives libraries, which is only supported on Linux as of now. 
-Therefore it is currently not possible to run Conio on Mac.
+You can read it [here](/docs/USAGE.md) how to run Conio locally. 
 
-For Linux systems perform the following steps:
+## Roadmap
 
-1. Download a supported Hadoop from [here](https://archive.apache.org/dist/hadoop/common/hadoop-3.3.0/hadoop-3.3.0.tar.gz).
-
-1. Set up a Single Node Cluster based on this [document](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/SingleCluster.html).
-
-1. Configure to use [Linux Container Executor](https://hadoop.apache.org/docs/r3.3.0/hadoop-yarn/hadoop-yarn-site/SecureContainer.html#Linux_Secure_Container_Executor) in YARN
-
-1. [Enable scheduling of Docker containers](https://hadoop.apache.org/docs/r3.3.0/hadoop-yarn/hadoop-yarn-site/DockerContainers.html) in YARN and set up your Docker daemon accordingly.
-
-1. Submit the CONIO application to the cluster using this command:
-```bash
-java -jar conio-1.0-SNAPSHOT-jar-with-dependencies.jar
-```
-
-### Using Dockerized Hadoop
-
-A suitable choice is [big-data-europe/docker-hadoop](https://github.com/big-data-europe/docker-hadoop) which uses Docker compose to run Hadoop daemons.
-
-Note: it should be used with Dind containers
-
-```bash
-docker run -it -a stdin -a stdout -a stderr --env-file hadoop.env --network docker-hadoop_default -v $(PWD)/conio:/conio conio/base:master -- sudo -u conio java -jar /conio/conio-1.0-SNAPSHOT-jar-with-dependencies.jar -yaml /conio/pod.yaml --queue default
-```
-
-#### Container failure due to mount denied
-
-In Docker for Mac set 
-
-## Performance
-
-<!--
-TODO: might be interesting to compare on some samples
-note: this number does not imply anything
--->
-
-## Architectural details
-
-Actually Hadoop YARN and Kubernetes are not so different architecturally.
-
-There are certain features that could never be translated though, and the project's purpose is not to fill this gap.
-Like: <!-- TODO: fill this -->
-
-Ideas:
-- namespace -> queue?
-- only Docker containers are supported
-- no Services in Hadoop
-- storage is different in Hadoop: but it can be resolved
--   
+The tool is currently in pre-alpha stage. You can check the roadmap [here](docs/ROADMAP.md).
