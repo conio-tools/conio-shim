@@ -1,0 +1,18 @@
+name: checkstyle
+
+on: pull_request
+
+jobs:
+  checkstyle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Run check style
+        uses: nikitasavinov/checkstyle-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: 'github-pr-check'
+          tool_name: 'testtool'
+          checkstyle_config: 'src/main/resources/checkstyle.xml'
+          level: 'warning'
