@@ -32,7 +32,6 @@ import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
-import org.apache.hadoop.yarn.api.protocolrecords.GetNewApplicationResponse;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ApplicationSubmissionContext;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
@@ -71,7 +70,7 @@ public class Client {
   private String appMasterJar = "/conio/conio-1.0-SNAPSHOT-jar-with-dependencies.jar";
   private String dockerClientConfig;
   private String yamlFile;
-  private String queueName = DEFAULT_QUEUE_NAME;
+  private String queueName;
 
   private Pod pod;
   private boolean watch;
@@ -98,7 +97,9 @@ public class Client {
     return opts;
   }
 
-  /** Initializes the client by parsing the input arguments. */
+  /**
+   *  Initializes the client by parsing the input arguments.
+   */
   public void init(String[] args) throws ParseException, FileNotFoundException {
     if (args.length == 0) {
       throw new IllegalArgumentException("No args specified for client to initialize");
@@ -109,18 +110,20 @@ public class Client {
     yamlFile = cliParser.getOptionValue(YAML_OPT);
     watch = cliParser.hasOption(WATCH_OPT);
     pod = Pod.parseFromFile(yamlFile);
-    LOG.info("The used image is " + pod.getSpec().getContainers().get(0).getImage());
+    LOG.info("Succesfully parsed pod yaml with name {}", pod.getMetadata().getName());
 
     String configuredQueue = cliParser.getOptionValue(QUEUE_OPT);
-    if (configuredQueue != null) {
-      queueName = configuredQueue;
-    }
+    queueName = !configuredQueue.isEmpty() ? configuredQueue : DEFAULT_QUEUE_NAME;
+    LOG.debug("Starting the application in {} queue", queueName);
   }
 
-  /** This client submits the application and optionally waits until it finishes successfully. */
+  /**
+   * Submits the application and optionally waits until it finishes successfully.
+   */
   // TODO set no retry for the AM
   public void run() throws YarnException, IOException {
     yarnClient.start();
+    LOG.info("YARN client started.");
 
     QueueInfo queueInfo = yarnClient.getQueueInfo(queueName);
     if (queueInfo == null) {
@@ -128,11 +131,8 @@ public class Client {
     }
 
     YarnClientApplication app = yarnClient.createApplication();
-    GetNewApplicationResponse appResponse = app.getNewApplicationResponse();
-
     ApplicationSubmissionContext appContext = app.getApplicationSubmissionContext();
 
-    // set AM resources
     setAppMasterResources(appContext);
 
     // if AM crashes, restart child containers
@@ -146,7 +146,7 @@ public class Client {
     // appContext.setApplicationTags(tags);
 
     // add local resources
-    Map<String, LocalResource> localResources = new HashMap<String, LocalResource>();
+    Map<String, LocalResource> localResources = new HashMap<>();
     FileSystem fs = FileSystem.get(conf);
 
     ApplicationId applicationId = appContext.getApplicationId();
@@ -156,10 +156,9 @@ public class Client {
         fs, appMasterJar, APP_MASTER_JAR, applicationId.toString(), localResources, null);
 
     // TODO: support localizable files
-    // TODO upload yaml to HDFS
     String yamlHDFSPath = uploadYamlToHDFS();
 
-    Map<String, String> env = new HashMap<String, String>();
+    Map<String, String> env = new HashMap<>();
     env.put(ENV_YAML_HDFS_PATH, yamlHDFSPath);
 
     setupAppMasterJar(env);
@@ -202,7 +201,7 @@ public class Client {
       FileSystem fs,
       Map<String, String> env)
       throws IOException {
-    Vector<CharSequence> vargs = new Vector<CharSequence>(30);
+    Vector<CharSequence> vargs = new Vector<>(30);
 
     // Set java executable command
     LOG.info("Setting up app master command");
@@ -251,9 +250,6 @@ public class Client {
         }
       }
     }
-
-    // this is important, please revise this!
-    // TODO
 
     // Add the docker client config credentials if supplied.
     Credentials dockerCredentials = null;

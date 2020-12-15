@@ -11,11 +11,11 @@
 - Pod yaml update
 - Add quickstart section
 - Write documentation about configuration options (client and AM)
-- Add CD integration
 - Add MiniYARNCluster integration tests for the AM communication protocols
 
 ## Main feature ideas for further releases
 
+- Leverage ZooKeeper for storing yamls
 - Deployment support
 - Replicaset support
 - Helm support

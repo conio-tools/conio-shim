@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.FileNotFoundException;
 import org.apache.hadoop.yarn.api.records.Resource;
+import org.conio.container.engine.util.Translate;
 import org.conio.container.k8s.Pod;
 import org.junit.Test;
 

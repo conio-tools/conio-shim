@@ -1,11 +1,10 @@
 package org.conio.container.engine;
 
 import static org.conio.container.Constants.ENV_YAML_HDFS_PATH;
+import static org.conio.container.engine.util.Util.secureGetEnv;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -22,14 +21,11 @@ import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse;
-import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
-import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ExecutionType;
 import org.apache.hadoop.yarn.api.records.ExecutionTypeRequest;
 import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
 import org.apache.hadoop.yarn.api.records.Priority;
-import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.client.api.AMRMClient;
 import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.apache.hadoop.yarn.client.api.async.NMClientAsync;
@@ -37,8 +33,8 @@ import org.apache.hadoop.yarn.client.api.async.impl.NMClientAsyncImpl;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.security.AMRMTokenIdentifier;
+import org.conio.container.engine.util.Translate;
 import org.conio.container.k8s.Pod;
-import org.conio.container.k8s.ResourceRequirements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +46,8 @@ public class ApplicationMaster {
   private NMClientAsync nmClientAsync;
 
   private Pod pod;
+
+  private ContainerId containerId;
 
   /**
    * Main entrypoint of the Application Master class.
@@ -83,39 +81,25 @@ public class ApplicationMaster {
       throw new IllegalArgumentException("No args specified for application master to initialize");
     }
 
-    // TODO set up AM based on cliParser arguments
     CommandLine cliParser = new GnuParser().parse(opts, args);
     String appName = cliParser.getOptionValue("appname");
-    LOG.info("The application name is {}", appName);
+    LOG.info("Parsed application name: {}", appName);
 
-    Map<String, String> envs = System.getenv();
-
-    if (!envs.containsKey(ApplicationConstants.Environment.CONTAINER_ID.name())) {
+    String containerIdStr = secureGetEnv(ApplicationConstants.Environment.CONTAINER_ID.name());
+    if (containerIdStr.isEmpty()) {
       throw new RuntimeException("Expected container ID among the environment variables");
     }
-    ContainerId containerId =
-        ContainerId.fromString(envs.get(ApplicationConstants.Environment.CONTAINER_ID.name()));
-    ApplicationAttemptId appAttemptID = containerId.getApplicationAttemptId();
-    ApplicationId appId = appAttemptID.getApplicationId();
-    LOG.info("The application ID is {}", appId);
+    containerId = ContainerId.fromString(containerIdStr);
+    LOG.info("Application ID: {}", containerId.getApplicationAttemptId().getApplicationId());
   }
 
   private void run() throws IOException, YarnException {
-    // TODO token setup
     tokenSetup();
 
-    // if this needs to be configured, you should also that resource to the AM container context
+    // if this needs to be configured, resources should be added to the AM container context
     Configuration conf = new YarnConfiguration();
 
-    String yamlHdfsPath = System.getenv(ENV_YAML_HDFS_PATH);
-    FileSystem fs = FileSystem.get(conf);
-    String[] localDirs = StringUtils.getTrimmedStrings(
-            System.getenv(ApplicationConstants.Environment.LOCAL_DIRS.key()));
-    String containerId = System.getenv(ApplicationConstants.Environment.CONTAINER_ID.key());
-
-    Path path = new Path(new Path(localDirs[0], containerId), "pod.yaml");
-    fs.copyToLocalFile(new Path(yamlHdfsPath), path);
-    pod = Pod.parseFromFile(path.toString());
+    pod = Pod.parseFromFile(getYamlPath(conf).toString());
     LOG.info("Loaded pod {}", pod.getMetadata().getName());
 
     NMCallbackHandler containerListener = new NMCallbackHandler();
@@ -138,6 +122,17 @@ public class ApplicationMaster {
     amRMClient.addContainerRequest(containerAsk);
   }
 
+  private Path getYamlPath(Configuration conf) throws IOException {
+    String yamlHdfsPath = secureGetEnv(ENV_YAML_HDFS_PATH);
+    FileSystem fs = FileSystem.get(conf);
+    String[] localDirs = StringUtils.getTrimmedStrings(
+        secureGetEnv(ApplicationConstants.Environment.LOCAL_DIRS.key()));
+
+    Path path = new Path(new Path(localDirs[0], containerId.toString()), "pod.yaml");
+    fs.copyToLocalFile(new Path(yamlHdfsPath), path);
+    return path;
+  }
+
   private void tokenSetup() throws IOException {
     Credentials credentials = UserGroupInformation.getCurrentUser().getCredentials();
     DataOutputBuffer dob = new DataOutputBuffer();
@@ -154,15 +149,15 @@ public class ApplicationMaster {
     }
     // ByteBuffer allTokens = ByteBuffer.wrap(dob.getData(), 0, dob.getLength());
 
-    String appSubmitterUserName = System.getenv(ApplicationConstants.Environment.USER.name());
+    String appSubmitterUserName = secureGetEnv(ApplicationConstants.Environment.USER.name());
     UserGroupInformation appSubmitterUgi =
         UserGroupInformation.createRemoteUser(appSubmitterUserName);
     appSubmitterUgi.addCredentials(credentials);
+
+    LOG.debug("Tokens has been set up successfully.");
   }
 
   private AMRMClient.ContainerRequest setupContainerAskForRM() {
-    // TODO add yaml as resource?
-
     return new AMRMClient.ContainerRequest(
         Translate.translateResourceRequirements(pod),
         null,
