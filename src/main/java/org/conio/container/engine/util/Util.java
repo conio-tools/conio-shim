@@ -6,6 +6,10 @@ public class Util {
   private Util() {
   }
 
+  /**
+   * Retrieves an environment variable from the system.
+   * Throws RuntimeException if not found.
+   */
   public static String secureGetEnv(String env) {
     String value = System.getenv(ApplicationConstants.Environment.LOCAL_DIRS.key());
     if (value.isEmpty()) {

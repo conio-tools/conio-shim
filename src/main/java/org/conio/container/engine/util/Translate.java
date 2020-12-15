@@ -9,6 +9,10 @@ public class Translate {
   private Translate() {
   }
 
+  /**
+   * Translates a Kubernetes ResourceRequirements to a Hadoop Resource object.
+   * Currently only supports cpu and memory resources.
+   */
   public static Resource translateResourceRequirements(Pod pod) {
     ResourceRequirements res = pod.getSpec().getContainers().get(0).getResources();
     Map<String, String> limits = res.getLimits();
