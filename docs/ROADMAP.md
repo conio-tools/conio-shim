@@ -2,6 +2,14 @@
 
 ## Core features (targeted for v1.0)
 
+- Support pod yaml fields
+  - Support multiple containers
+  - Support args and command fields
+  - Support volumes (hostpath, HDFS maybe?)
+  - Support restart policy
+- Provide status of the application
+- Pod yaml update
+- Add quickstart section
 - Write documentation about configuration options (client and AM)
 - Add CD integration
 - Add MiniYARNCluster integration tests for the AM communication protocols
