@@ -1,4 +1,4 @@
-package org.conio.container.engine;
+package org.conio.container.engine.util;
 
 import java.util.Map;
 import org.apache.hadoop.yarn.api.records.Resource;
@@ -9,7 +9,7 @@ public class Translate {
   private Translate() {
   }
 
-  static Resource translateResourceRequirements(Pod pod) {
+  public static Resource translateResourceRequirements(Pod pod) {
     ResourceRequirements res = pod.getSpec().getContainers().get(0).getResources();
     Map<String, String> limits = res.getLimits();
     String cpu = limits.get("cpu");
