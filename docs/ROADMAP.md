@@ -3,7 +3,6 @@
 ## Core features (targeted for v1.0)
 
 - Write documentation about configuration options (client and AM)
-- Support `env` configuration
 - Add CD integration
 - Add MiniYARNCluster integration tests for the AM communication protocols
 
