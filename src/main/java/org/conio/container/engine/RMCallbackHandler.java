@@ -17,6 +17,7 @@ import org.apache.hadoop.yarn.api.records.RejectedSchedulingRequest;
 import org.apache.hadoop.yarn.api.records.UpdatedContainer;
 import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.apache.hadoop.yarn.client.api.async.NMClientAsync;
+import org.conio.container.k8s.EnvVar;
 import org.conio.container.k8s.Pod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,6 +69,7 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
     env.put("YARN_CONTAINER_RUNTIME_DOCKER_RUN_OVERRIDE_DISABLE", "true");
     // TODO parameterize this
     env.put("YARN_CONTAINER_RUNTIME_DOCKER_DELAYED_REMOVAL", "true");
+    fillEnvMapFromPod(pod, env);
 
     LOG.info("Initialized ContainerLaunchContext");
     ContainerLaunchContext ctx =
@@ -114,5 +116,12 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
 
   public AtomicBoolean isFinished() {
     return done;
+  }
+
+  private void fillEnvMapFromPod(Pod pod, Map<String, String> envs) {
+    List<EnvVar> envVarList = pod.getSpec().getContainers().get(0).getEnv();
+    for (EnvVar envVar : envVarList) {
+      envs.put(envVar.getName(), envVar.getValue());
+    }
   }
 }

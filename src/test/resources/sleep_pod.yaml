@@ -12,6 +12,11 @@ spec:
         - "60"
       imagePullPolicy: IfNotPresent
       name: sleep-container
+      env:
+        - name: SOME_KEY
+          value: "some value"
+        - name: OTHER_KEY
+          value: "some other value"
       resources:
         limits:
           cpu: 1

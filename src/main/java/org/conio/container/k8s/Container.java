@@ -4,10 +4,9 @@ package org.conio.container.k8s;
 // https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/
 
 import java.util.List;
-import java.util.Map;
 
 public class Container {
-  private Map<String, String> env;
+  private List<EnvVar> env;
   private List<String> command;
   private String image;
   private String imagePullPolicy;
@@ -17,11 +16,11 @@ public class Container {
   public Container() {
   }
 
-  public Map<String, String> getEnv() {
+  public List<EnvVar> getEnv() {
     return env;
   }
 
-  public void setEnv(Map<String, String> env) {
+  public void setEnv(List<EnvVar> env) {
     this.env = env;
   }
 
