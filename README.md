@@ -4,6 +4,8 @@
 TODO: CONIO LOGO??
 -->
 
+![Build](https://github.com/conio-tools/conio-shim/workflows/Build/badge.svg?branch=master)
+
 Conio \[Italian:co·nì·glio\] is the abbreviation of Container Orchestrator Network's InterOperability tools. Conio is a set of tools providing interoperability between different container orchestrators like Hadoop YARN and Kubernetes.
  
 The purpose of the Conio shim layer is to translate various Kubernetes objects (starting from simple Pod definitions to complex Helm charts) to Hadoop-compatible (YARN) applications.
