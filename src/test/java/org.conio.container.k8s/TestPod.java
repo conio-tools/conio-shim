@@ -20,7 +20,7 @@ public class TestPod {
 
     // pod
     PodSpec podSpec = pod.getSpec();
-    assertEquals("Never", podSpec.getRestartPolicy());
+    assertEquals(RestartPolicy.NEVER, podSpec.getRestartPolicyObject());
 
     // container
     assertEquals(1, podSpec.getContainers().size());

@@ -12,7 +12,7 @@ public class TestTranslate {
   @Test
   public void testTranslateResourceRequirements() throws FileNotFoundException {
     Pod pod = Pod.parseFromFile("src/test/resources/sleep_pod.yaml");
-    Resource res = Translate.translateResourceRequirements(pod);
+    Resource res = Translate.translateResourceRequirements(pod.getSpec().getContainers().get(0));
     assertEquals(200L, res.getMemorySize());
     assertEquals(1, res.getVirtualCores());
   }

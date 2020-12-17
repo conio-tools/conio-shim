@@ -18,7 +18,6 @@ import org.apache.hadoop.yarn.api.records.UpdatedContainer;
 import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.apache.hadoop.yarn.client.api.async.NMClientAsync;
 import org.conio.container.k8s.EnvVar;
-import org.conio.container.k8s.Pod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,59 +27,50 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
   private final Context context;
   private final NMClientAsync nmClientAsync;
 
-  private final AtomicInteger containerAsks;
-  private final AtomicInteger runningContainers;
-
   RMCallbackHandler(Context context, NMClientAsync nmClientAsync) {
     this.context = context;
     this.nmClientAsync = nmClientAsync;
-    this.containerAsks = new AtomicInteger(0);
-    this.runningContainers = new AtomicInteger(0);
   }
 
   @Override
   public void onContainersCompleted(List<ContainerStatus> completedContainers) {
     LOG.info("onContainersCompleted called with size=" + completedContainers.size());
-    runningContainers.getAndDecrement();
+    for (ContainerStatus status : completedContainers) {
+      context.getContainerTracker().containerCompleted(status);
+    }
   }
 
   @Override
   public void onContainersAllocated(List<Container> allocatedContainers) {
-    if (allocatedContainers.size() != 1) {
-      LOG.warn("Expected exactly one container");
-      if (allocatedContainers.size() == 0) {
-        LOG.error("AllocatedContainer size is zero! Nothing to do.");
-        return;
+    for (Container allocatedContainer : allocatedContainers) {
+      org.conio.container.k8s.Container container =
+          context.getContainerTracker().containerAllocated(allocatedContainer);
+
+      ByteBuffer allTokens;
+      try {
+        Credentials credentials = UserGroupInformation.getCurrentUser().getCredentials();
+        DataOutputBuffer dob = new DataOutputBuffer();
+        credentials.writeTokenStorageToStream(dob);
+        allTokens = ByteBuffer.wrap(dob.getData(), 0, dob.getLength());
+      } catch (IOException ioe) {
+        throw new RuntimeException("unexpected exception", ioe);
       }
+
+      Map<String, String> env = new HashMap<>();
+      env.put("YARN_CONTAINER_RUNTIME_TYPE", "docker");
+      env.put("YARN_CONTAINER_RUNTIME_DOCKER_IMAGE", container.getImage());
+      env.put("YARN_CONTAINER_RUNTIME_DOCKER_RUN_OVERRIDE_DISABLE", "true");
+      // TODO parameterize this
+      env.put("YARN_CONTAINER_RUNTIME_DOCKER_DELAYED_REMOVAL", "true");
+      fillEnvMapFromPod(container, env);
+
+      LOG.info("Initialized ContainerLaunchContext");
+      ContainerLaunchContext ctx =
+          ContainerLaunchContext.newInstance(
+              new HashMap<>(), env, container.getCommand(),
+              null, allTokens.duplicate(), null, null);
+      nmClientAsync.startContainerAsync(allocatedContainer, ctx);
     }
-
-    ByteBuffer allTokens;
-    try {
-      Credentials credentials = UserGroupInformation.getCurrentUser().getCredentials();
-      DataOutputBuffer dob = new DataOutputBuffer();
-      credentials.writeTokenStorageToStream(dob);
-      allTokens = ByteBuffer.wrap(dob.getData(), 0, dob.getLength());
-    } catch (IOException ioe) {
-      throw new RuntimeException("unexpected exception", ioe);
-    }
-
-    Pod pod = context.getPod();
-    Map<String, String> env = new HashMap<>();
-    env.put("YARN_CONTAINER_RUNTIME_TYPE", "docker");
-    env.put("YARN_CONTAINER_RUNTIME_DOCKER_IMAGE",
-        pod.getSpec().getContainers().get(0).getImage());
-    env.put("YARN_CONTAINER_RUNTIME_DOCKER_RUN_OVERRIDE_DISABLE", "true");
-    // TODO parameterize this
-    env.put("YARN_CONTAINER_RUNTIME_DOCKER_DELAYED_REMOVAL", "true");
-    fillEnvMapFromPod(pod, env);
-
-    LOG.info("Initialized ContainerLaunchContext");
-    ContainerLaunchContext ctx =
-        ContainerLaunchContext.newInstance(
-            new HashMap<>(), env, pod.getSpec().getContainers().get(0).getCommand(),
-            null, allTokens.duplicate(), null, null);
-    nmClientAsync.startContainerAsync(allocatedContainers.get(0), ctx);
-    runningContainers.getAndIncrement();
   }
 
   @Override
@@ -93,9 +83,8 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
 
   @Override
   public void onRequestsRejected(List<RejectedSchedulingRequest> rejectedRequests) {
-    for (RejectedSchedulingRequest rsr : rejectedRequests) {
-      LOG.error("Scheduling request rejected. Reason: {}", rsr.getReason());
-      containerAsks.getAndDecrement();
+    for (RejectedSchedulingRequest rejectedRequest : rejectedRequests) {
+      context.getContainerTracker().requestRejected(rejectedRequest);
     }
   }
 
@@ -121,22 +110,11 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
     // TODO should call stop
   }
 
-  private void fillEnvMapFromPod(Pod pod, Map<String, String> envs) {
-    List<EnvVar> envVarList = pod.getSpec().getContainers().get(0).getEnv();
+  private void fillEnvMapFromPod(
+      org.conio.container.k8s.Container container, Map<String, String> envs) {
+    List<EnvVar> envVarList = container.getEnv();
     for (EnvVar envVar : envVarList) {
       envs.put(envVar.getName(), envVar.getValue());
     }
-  }
-
-  public void incrementContainerAsks() {
-    containerAsks.getAndIncrement();
-  }
-
-  public int getContainerAsks() {
-    return containerAsks.get();
-  }
-
-  public int getRunningContainers() {
-    return runningContainers.get();
   }
 }
