@@ -21,9 +21,10 @@ public class NMCallbackHandler extends NMClientAsync.AbstractCallbackHandler {
   }
 
   @Override
-  public void onContainerStopped(ContainerId containerId) {
-    LOG.debug("Container {} stopped", containerId);
-    containers.remove(containerId);
+  public void onContainerStarted(
+      ContainerId containerId, Map<String, ByteBuffer> allServiceResponse) {
+    LOG.debug("Started container {}", containerId);
+    containers.put(containerId, null);
   }
 
   @Override
@@ -32,9 +33,9 @@ public class NMCallbackHandler extends NMClientAsync.AbstractCallbackHandler {
   }
 
   @Override
-  public void onContainerStarted(
-      ContainerId containerId, Map<String, ByteBuffer> allServiceResponse) {
-    LOG.debug("Started container {}", containerId);
+  public void onContainerStopped(ContainerId containerId) {
+    LOG.debug("Container {} stopped", containerId);
+    containers.remove(containerId);
   }
 
   @Override

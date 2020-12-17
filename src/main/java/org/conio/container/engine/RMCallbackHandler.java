@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -25,20 +25,23 @@ import org.slf4j.LoggerFactory;
 public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
   private static final Logger LOG = LoggerFactory.getLogger(RMCallbackHandler.class);
 
-  private final ApplicationMaster am;
+  private final Context context;
   private final NMClientAsync nmClientAsync;
-  private final AtomicBoolean done;
 
-  RMCallbackHandler(ApplicationMaster am, NMClientAsync nmClientAsync) {
-    this.am = am;
+  private final AtomicInteger containerAsks;
+  private final AtomicInteger runningContainers;
+
+  RMCallbackHandler(Context context, NMClientAsync nmClientAsync) {
+    this.context = context;
     this.nmClientAsync = nmClientAsync;
-    this.done = new AtomicBoolean(false);
+    this.containerAsks = new AtomicInteger(0);
+    this.runningContainers = new AtomicInteger(0);
   }
 
   @Override
   public void onContainersCompleted(List<ContainerStatus> completedContainers) {
     LOG.info("onContainersCompleted called with size=" + completedContainers.size());
-    this.done.set(true);
+    runningContainers.getAndDecrement();
   }
 
   @Override
@@ -61,7 +64,7 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
       throw new RuntimeException("unexpected exception", ioe);
     }
 
-    Pod pod = am.getPod();
+    Pod pod = context.getPod();
     Map<String, String> env = new HashMap<>();
     env.put("YARN_CONTAINER_RUNTIME_TYPE", "docker");
     env.put("YARN_CONTAINER_RUNTIME_DOCKER_IMAGE",
@@ -77,6 +80,7 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
             new HashMap<>(), env, pod.getSpec().getContainers().get(0).getCommand(),
             null, allTokens.duplicate(), null, null);
     nmClientAsync.startContainerAsync(allocatedContainers.get(0), ctx);
+    runningContainers.getAndIncrement();
   }
 
   @Override
@@ -88,19 +92,22 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
   }
 
   @Override
-  public void onRequestsRejected(List<RejectedSchedulingRequest> rejReqs) {
-    LOG.info("scheduling request rejected");
-    done.set(true);
+  public void onRequestsRejected(List<RejectedSchedulingRequest> rejectedRequests) {
+    for (RejectedSchedulingRequest rsr : rejectedRequests) {
+      LOG.error("Scheduling request rejected. Reason: {}", rsr.getReason());
+      containerAsks.getAndDecrement();
+    }
   }
 
   @Override
   public void onShutdownRequest() {
     LOG.info("shutdown was requested");
-    done.set(true);
+    // TODO shut down
   }
 
   @Override
   public void onNodesUpdated(List<NodeReport> updatedNodes) {
+    // let's ignore this now
   }
 
   @Override
@@ -111,11 +118,7 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
   @Override
   public void onError(Throwable e) {
     LOG.error("Error in RMCallbackHandler: ", e);
-    done.set(true);
-  }
-
-  public AtomicBoolean isFinished() {
-    return done;
+    // TODO should call stop
   }
 
   private void fillEnvMapFromPod(Pod pod, Map<String, String> envs) {
@@ -123,5 +126,17 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
     for (EnvVar envVar : envVarList) {
       envs.put(envVar.getName(), envVar.getValue());
     }
+  }
+
+  public void incrementContainerAsks() {
+    containerAsks.getAndIncrement();
+  }
+
+  public int getContainerAsks() {
+    return containerAsks.get();
+  }
+
+  public int getRunningContainers() {
+    return runningContainers.get();
   }
 }

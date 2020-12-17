@@ -5,6 +5,7 @@ import static org.conio.container.engine.util.Util.secureGetEnv;
 
 import java.io.IOException;
 import java.util.Iterator;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -34,7 +35,9 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.security.AMRMTokenIdentifier;
 import org.conio.container.engine.util.Translate;
+import org.conio.container.k8s.Container;
 import org.conio.container.k8s.Pod;
+import org.conio.container.k8s.RestartPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +45,7 @@ public class ApplicationMaster {
   private static final Logger LOG = LoggerFactory.getLogger(ApplicationMaster.class);
 
   private AMRMClientAsync<AMRMClient.ContainerRequest> amRMClient;
-  private RMCallbackHandler allocListener;
+  private RMCallbackHandler rmCallbackHandler;
   private NMClientAsync nmClientAsync;
 
   private Pod pod;
@@ -102,14 +105,15 @@ public class ApplicationMaster {
     pod = Pod.parseFromFile(getYamlPath(conf).toString());
     LOG.info("Loaded pod {}", pod.getMetadata().getName());
 
-    NMCallbackHandler containerListener = new NMCallbackHandler();
-    nmClientAsync = new NMClientAsyncImpl(containerListener);
+    NMCallbackHandler nmCallbackHandler = new NMCallbackHandler();
+    nmClientAsync = new NMClientAsyncImpl(nmCallbackHandler);
     nmClientAsync.init(conf);
     nmClientAsync.start();
 
-    allocListener = new RMCallbackHandler(this, nmClientAsync);
+    Context context = new Context(pod);
+    rmCallbackHandler = new RMCallbackHandler(context, nmClientAsync);
 
-    amRMClient = AMRMClientAsync.createAMRMClientAsync(1000, allocListener);
+    amRMClient = AMRMClientAsync.createAMRMClientAsync(1000, rmCallbackHandler);
     amRMClient.init(conf);
     amRMClient.start();
 
@@ -118,8 +122,49 @@ public class ApplicationMaster {
     RegisterApplicationMasterResponse response =
         amRMClient.registerApplicationMaster(appMasterHostname, -1, "", null);
 
+    controlLoop();
+  }
+
+  private void addContainerRequest() {
     AMRMClient.ContainerRequest containerAsk = setupContainerAskForRM();
     amRMClient.addContainerRequest(containerAsk);
+    rmCallbackHandler.incrementContainerAsks();
+  }
+
+  private void controlLoop() {
+    RestartPolicy restartPolicy = pod.getSpec().getRestartPolicy();
+    while (true) {
+      switch (restartPolicy) {
+        case ON_FAILURE:
+          // TODO implement this
+        case ALWAYS:
+          if (rmCallbackHandler.getRunningContainers() != pod.getSpec().getContainers().size()) {
+            if (rmCallbackHandler.getContainerAsks()
+                < pod.getSpec().getContainers().size() - rmCallbackHandler.getRunningContainers()) {
+              addContainerRequest();
+            }
+          }
+          break;
+        case NEVER:
+          if (rmCallbackHandler.getRunningContainers() == 0) {
+            if (rmCallbackHandler.getContainerAsks() == 0) {
+              for (Container container: pod.getSpec().getContainers()) {
+                // TODO request should depend on the container spec
+                addContainerRequest();
+              }
+            }
+          }
+          break;
+        default:
+          LOG.error("Unknown restartPolicy: {}", restartPolicy);
+          return;
+      }
+      try {
+        Thread.sleep(200);
+      } catch (InterruptedException ie) {
+        return;
+      }
+    }
   }
 
   private Path getYamlPath(Configuration conf) throws IOException {
@@ -170,12 +215,7 @@ public class ApplicationMaster {
         "");
   }
 
-  private void finish() throws InterruptedException {
-    // wait for completion
-    while (!allocListener.isFinished().get()) {
-      Thread.sleep(200);
-    }
-
+  private void finish() {
     LOG.info("Application completed, cleaning up");
 
     // When the application completes, it should stop all running containers

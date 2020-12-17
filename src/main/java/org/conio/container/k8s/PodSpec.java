@@ -17,8 +17,8 @@ public class PodSpec {
     this.containers = containers;
   }
 
-  public String getRestartPolicy() {
-    return restartPolicy;
+  public RestartPolicy getRestartPolicy() {
+    return RestartPolicy.valueOf(restartPolicy);
   }
 
   public void setRestartPolicy(String restartPolicy) {

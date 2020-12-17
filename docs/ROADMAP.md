@@ -3,7 +3,7 @@
 ## Core features (targeted for v1.0)
 
 - Support pod yaml fields
-  - Support multiple containers
+  - Proper multiple container support
   - Support args and command fields
   - Support volumes (hostpath, HDFS maybe?)
   - Support restart policy
