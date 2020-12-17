@@ -5,7 +5,7 @@ import static org.conio.container.engine.util.Util.secureGetEnv;
 
 import java.io.IOException;
 import java.util.Iterator;
-
+import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -37,7 +37,6 @@ import org.apache.hadoop.yarn.security.AMRMTokenIdentifier;
 import org.conio.container.engine.util.Translate;
 import org.conio.container.k8s.Container;
 import org.conio.container.k8s.Pod;
-import org.conio.container.k8s.RestartPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,10 +46,11 @@ public class ApplicationMaster {
   private AMRMClientAsync<AMRMClient.ContainerRequest> amRMClient;
   private RMCallbackHandler rmCallbackHandler;
   private NMClientAsync nmClientAsync;
+  private Configuration conf;
+  private Context context;
+  private ContainerId amContainerId;
 
-  private Pod pod;
-
-  private ContainerId containerId;
+  private int requestId = 0;
 
   /**
    * Main entrypoint of the Application Master class.
@@ -76,7 +76,7 @@ public class ApplicationMaster {
     return opts;
   }
 
-  private void init(String[] args) throws ParseException {
+  private void init(String[] args) throws ParseException, IOException {
     Options opts = createOptions();
 
     if (args.length == 0) {
@@ -92,25 +92,24 @@ public class ApplicationMaster {
     if (containerIdStr.isEmpty()) {
       throw new RuntimeException("Expected container ID among the environment variables");
     }
-    containerId = ContainerId.fromString(containerIdStr);
-    LOG.info("Application ID: {}", containerId.getApplicationAttemptId().getApplicationId());
+    amContainerId = ContainerId.fromString(containerIdStr);
+    LOG.info("Application ID: {}", amContainerId.getApplicationAttemptId().getApplicationId());
+
+    // if this needs to be configured, resources should be added to the AM container context
+    conf = new YarnConfiguration();
+    Pod pod = Pod.parseFromFile(getYamlPath(conf).toString());
+    context = new Context(pod);
+    LOG.info("Loaded pod {}", pod.getMetadata().getName());
   }
 
   private void run() throws IOException, YarnException {
     tokenSetup();
-
-    // if this needs to be configured, resources should be added to the AM container context
-    Configuration conf = new YarnConfiguration();
-
-    pod = Pod.parseFromFile(getYamlPath(conf).toString());
-    LOG.info("Loaded pod {}", pod.getMetadata().getName());
 
     NMCallbackHandler nmCallbackHandler = new NMCallbackHandler();
     nmClientAsync = new NMClientAsyncImpl(nmCallbackHandler);
     nmClientAsync.init(conf);
     nmClientAsync.start();
 
-    Context context = new Context(pod);
     rmCallbackHandler = new RMCallbackHandler(context, nmClientAsync);
 
     amRMClient = AMRMClientAsync.createAMRMClientAsync(1000, rmCallbackHandler);
@@ -125,39 +124,17 @@ public class ApplicationMaster {
     controlLoop();
   }
 
-  private void addContainerRequest() {
-    AMRMClient.ContainerRequest containerAsk = setupContainerAskForRM();
+  private void addContainerRequest(Container container) {
+    AMRMClient.ContainerRequest containerAsk = setupContainerAskForRM(container);
     amRMClient.addContainerRequest(containerAsk);
-    rmCallbackHandler.incrementContainerAsks();
   }
 
   private void controlLoop() {
-    RestartPolicy restartPolicy = pod.getSpec().getRestartPolicy();
     while (true) {
-      switch (restartPolicy) {
-        case ON_FAILURE:
-          // TODO implement this
-        case ALWAYS:
-          if (rmCallbackHandler.getRunningContainers() != pod.getSpec().getContainers().size()) {
-            if (rmCallbackHandler.getContainerAsks()
-                < pod.getSpec().getContainers().size() - rmCallbackHandler.getRunningContainers()) {
-              addContainerRequest();
-            }
-          }
-          break;
-        case NEVER:
-          if (rmCallbackHandler.getRunningContainers() == 0) {
-            if (rmCallbackHandler.getContainerAsks() == 0) {
-              for (Container container: pod.getSpec().getContainers()) {
-                // TODO request should depend on the container spec
-                addContainerRequest();
-              }
-            }
-          }
-          break;
-        default:
-          LOG.error("Unknown restartPolicy: {}", restartPolicy);
-          return;
+      List<Container> unlaunchedContainers =
+          context.getContainerTracker().getUnlaunchedContainers();
+      for (Container unlaunchedContainer : unlaunchedContainers) {
+        addContainerRequest(unlaunchedContainer);
       }
       try {
         Thread.sleep(200);
@@ -173,7 +150,7 @@ public class ApplicationMaster {
     String[] localDirs = StringUtils.getTrimmedStrings(
         secureGetEnv(ApplicationConstants.Environment.LOCAL_DIRS.key()));
 
-    Path path = new Path(new Path(localDirs[0], containerId.toString()), "pod.yaml");
+    Path path = new Path(new Path(localDirs[0], amContainerId.toString()), "pod.yaml");
     fs.copyToLocalFile(new Path(yamlHdfsPath), path);
     return path;
   }
@@ -202,13 +179,13 @@ public class ApplicationMaster {
     LOG.debug("Tokens has been set up successfully.");
   }
 
-  private AMRMClient.ContainerRequest setupContainerAskForRM() {
+  private AMRMClient.ContainerRequest setupContainerAskForRM(Container container) {
     return new AMRMClient.ContainerRequest(
-        Translate.translateResourceRequirements(pod),
+        Translate.translateResourceRequirements(container),
         null,
         null,
         Priority.newInstance(0),
-        0,
+        context.getContainerTracker().getNextRequestIdForContainer(container),
         true,
         null,
         ExecutionTypeRequest.newInstance(ExecutionType.GUARANTEED, false),
@@ -233,9 +210,5 @@ public class ApplicationMaster {
   }
 
   private void cleanup() {
-  }
-
-  Pod getPod() {
-    return pod;
   }
 }

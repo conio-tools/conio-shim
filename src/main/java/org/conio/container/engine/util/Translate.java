@@ -2,7 +2,7 @@ package org.conio.container.engine.util;
 
 import java.util.Map;
 import org.apache.hadoop.yarn.api.records.Resource;
-import org.conio.container.k8s.Pod;
+import org.conio.container.k8s.Container;
 import org.conio.container.k8s.ResourceRequirements;
 
 public class Translate {
@@ -13,8 +13,8 @@ public class Translate {
    * Translates a Kubernetes ResourceRequirements to a Hadoop Resource object.
    * Currently only supports cpu and memory resources.
    */
-  public static Resource translateResourceRequirements(Pod pod) {
-    ResourceRequirements res = pod.getSpec().getContainers().get(0).getResources();
+  public static Resource translateResourceRequirements(Container container) {
+    ResourceRequirements res = container.getResources();
     Map<String, String> limits = res.getLimits();
     String cpu = limits.get("cpu");
     String memory = limits.get("memory");

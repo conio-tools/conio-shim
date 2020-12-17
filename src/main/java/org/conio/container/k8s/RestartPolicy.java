@@ -10,4 +10,13 @@ public enum RestartPolicy {
   RestartPolicy(String value) {
     this.value = value;
   }
+
+  static RestartPolicy fromString(String text) {
+    for (RestartPolicy restartPolicy : RestartPolicy.values()) {
+      if (restartPolicy.value.equalsIgnoreCase(text)) {
+        return restartPolicy;
+      }
+    }
+    return null;
+  }
 }
