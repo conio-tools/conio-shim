@@ -15,7 +15,7 @@ For Linux systems perform the following steps:
 
 1. [Enable scheduling of Docker containers](https://hadoop.apache.org/docs/r3.3.0/hadoop-yarn/hadoop-yarn-site/DockerContainers.html) in YARN (like setting up the [Linux Container Executor](https://hadoop.apache.org/docs/r3.3.0/hadoop-yarn/hadoop-yarn-site/SecureContainer.html#Linux_Secure_Container_Executor)) and set up your Docker daemon accordingly.
 
-1. Build Conio and obtain the far jar with its dependencies 
+1. Build Conio and obtain the far jar with its dependencies and 
 
 1. Submit the yaml describing your Kubernetes object through a Conio application by using the Conio client: 
 ```bash
@@ -29,8 +29,10 @@ java -jar conio-1.0-SNAPSHOT-jar-with-dependencies.jar -yaml k8s-obj.yaml
 
 If you use Conio-nano, you are probably going to need a similar command to start the Conio client in a Docker container that has the required files mounted in the container:
 ```bash
-docker run -it -a stdin -a stdout -a stderr --env-file hadoop.env --network docker-hadoop_default -v $(PWD)/conio:/conio conio/base:master -- sudo -u conio java -jar /conio/conio-1.0-SNAPSHOT-jar-with-dependencies.jar -yaml /conio/pod.yaml
+docker run -it -a stdin -a stdout -a stderr --env-file hadoop.env --network docker-hadoop_default -v $(PWD)/conio:/conio conio/base:master -- sudo -u conio java -jar /conio/conio.jar -yaml /conio/pod.yaml
 ```
+
+Note that the jar containing the dependencies is renamed to _conio.jar_. 
 
 ### Container failure due to mount denied
 

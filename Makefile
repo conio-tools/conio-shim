@@ -1,10 +1,33 @@
-.PHONY: build package clean
+.PHONY: build package clean demo conio-nano
 
 build:
 	mvn compile test
 
 package:
-	mvn package
+	mvn package -DskipTests
 
 clean:
 	mvn clean
+
+conio-nano:
+	if [ ! -d "conio-nano" ]; then \
+		@echo "Cloning conio-nano..."; \
+		git clone https://github.com/conio-tools/conio-nano; \
+	fi
+
+demo: package conio-nano
+	@echo "Copying files to the cloned repository..."
+	cp target/conio-1.0-SNAPSHOT-jar-with-dependencies.jar conio-nano/conio/conio.jar
+	cp src/test/resources/sleep_pod.yaml conio-nano/conio/
+	@echo "Starting dockerized Hadoop..."
+	cd conio-nano && make run
+	@echo "Building the conio client container..."
+	cd conio-nano && make conio
+	@echo "Waiting for dockerized Hadoop to come alive..."
+	@sleep 30
+	@echo "Submitting sleep yaml pod to Hadoop..."
+	docker run -it -a stdin -a stdout -a stderr --env-file conio-nano/hadoop.env --network conio-nano_default -v $(PWD)/conio-nano/conio:/conio conio/base:master -- sudo -u conio java -jar /conio/conio.jar -yaml /conio/sleep_pod.yaml -queue default -wait
+
+stop:
+	@echo "Stopping dockerized Hadoop..."
+	cd conio-nano && make stop
