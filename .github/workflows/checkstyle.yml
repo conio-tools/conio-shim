@@ -16,3 +16,4 @@ jobs:
           tool_name: 'testtool'
           checkstyle_config: 'src/main/resources/checkstyle.xml'
           level: 'warning'
+          fail_on_error: true
