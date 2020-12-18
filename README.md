@@ -12,6 +12,18 @@ The purpose of the Conio shim layer is to translate various Kubernetes objects (
 
 Disclaimer: this tool is in pre-alpha stage and under heavy development. It hasn't been tested thoroughly yet, and you should use with extreme care.  
 
+## Quickstart
+
+The following command will start a dockerized demo Hadoop cluster and submit a Conio application based on a [sleep pod yaml](./src/test/resources/sleep_pod.yaml).
+```bash
+make demo
+```
+
+After you've finished, stop the cluster with the following command:
+```bash
+make stop
+```
+
 ## Usage
 
 You can read it [here](/docs/USAGE.md) how to run Conio locally. 

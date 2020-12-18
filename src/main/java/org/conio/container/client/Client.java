@@ -67,10 +67,10 @@ public class Client {
   private final Configuration conf;
   private final Options opts;
 
-  private String appMasterJar = "/conio/conio-1.0-SNAPSHOT-jar-with-dependencies.jar";
+  private final String appMasterJar = "/conio/conio.jar";
   private String dockerClientConfig;
   private String yamlFile;
-  private String queueName;
+  private String queueName = DEFAULT_QUEUE_NAME;
 
   private Pod pod;
   private boolean watch;
@@ -113,7 +113,9 @@ public class Client {
     LOG.info("Succesfully parsed pod yaml with name {}", pod.getMetadata().getName());
 
     String configuredQueue = cliParser.getOptionValue(QUEUE_OPT);
-    queueName = !configuredQueue.isEmpty() ? configuredQueue : DEFAULT_QUEUE_NAME;
+    if (configuredQueue != null && !configuredQueue.isEmpty()) {
+      queueName = configuredQueue;
+    }
     LOG.debug("Starting the application in {} queue", queueName);
   }
 

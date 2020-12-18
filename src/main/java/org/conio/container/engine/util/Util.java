@@ -11,7 +11,7 @@ public class Util {
    * Throws RuntimeException if not found.
    */
   public static String secureGetEnv(String env) {
-    String value = System.getenv(ApplicationConstants.Environment.LOCAL_DIRS.key());
+    String value = System.getenv(env);
     if (value.isEmpty()) {
       throw new RuntimeException(String.format("Expected %s environment variable not found", env));
     }
