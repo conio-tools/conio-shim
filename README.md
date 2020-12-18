@@ -4,7 +4,7 @@
 TODO: CONIO LOGO??
 -->
 
-![build](https://github.com/conio-tools/conio-shim/workflows/Build/badge.svg?branch=master)
+![build](https://github.com/conio-tools/conio-shim/workflows/build/badge.svg?branch=master)
 
 Conio \[Italian:co·nì·glio\] is the abbreviation of Container Orchestrator Network's InterOperability tools. Conio is a set of tools providing interoperability between different container orchestrators like Hadoop YARN and Kubernetes.
  
