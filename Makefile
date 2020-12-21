@@ -17,7 +17,9 @@ conio-nano:
 
 demo: package conio-nano
 	@echo "Copying files to the cloned repository..."
+	rm -rf conio-nano/conio/conio.jar
 	cp target/conio-1.0-SNAPSHOT-jar-with-dependencies.jar conio-nano/conio/conio.jar
+	rm -rf conio-nano/conio/sleep_pod.yaml
 	cp src/test/resources/sleep_pod.yaml conio-nano/conio/
 	@echo "Starting dockerized Hadoop..."
 	cd conio-nano && make run
