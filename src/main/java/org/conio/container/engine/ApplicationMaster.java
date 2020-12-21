@@ -137,6 +137,9 @@ public class ApplicationMaster {
       for (Container unlaunchedContainer : unlaunchedContainers) {
         addContainerRequest(unlaunchedContainer);
       }
+      if (context.getContainerTracker().hasFinished()) {
+        break;
+      }
       try {
         Thread.sleep(200);
       } catch (InterruptedException ie) {

@@ -95,16 +95,14 @@ public class ContainerTracker {
           unlaunchedContainers.add(container);
         }
       } else {
-        List<ContainerEvent> events = containerStatuses.get(container.getName());
-        ContainerEvent event = events.get(events.size() - 1);
-        if (event.getType() == ContainerEventType.FAILED
-            || event.getType() == ContainerEventType.SUCCEEDED) {
+        ContainerEventType type = getLastEventType(container);
+        if (type.isTerminated()) {
           switch (restartPolicy) {
             case ALWAYS:
               unlaunchedContainers.add(container);
               continue;
             case ON_FAILURE:
-              if (event.getType() == ContainerEventType.FAILED) {
+              if (type == ContainerEventType.FAILED) {
                 unlaunchedContainers.add(container);
                 continue;
               }
@@ -129,5 +127,21 @@ public class ContainerTracker {
       }
     }
     return false;
+  }
+
+  boolean hasFinished() {
+    if (getUnlaunchedContainers().size() == 0) {
+      return containers.stream().allMatch(x -> getLastEventType(x).isTerminated());
+    }
+    return false;
+  }
+
+  private synchronized ContainerEventType getLastEventType(Container container) {
+    List<ContainerEvent> events = containerStatuses.get(container.getName());
+    if (events == null) {
+      return ContainerEventType.NONE;
+    }
+    ContainerEvent event = events.get(events.size() - 1);
+    return event.getType();
   }
 }
