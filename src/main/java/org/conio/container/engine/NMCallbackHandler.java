@@ -2,9 +2,8 @@ package org.conio.container.engine;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
 import org.apache.hadoop.yarn.api.records.Resource;
@@ -15,7 +14,7 @@ import org.slf4j.LoggerFactory;
 public class NMCallbackHandler extends NMClientAsync.AbstractCallbackHandler {
   private static final Logger LOG = LoggerFactory.getLogger(NMCallbackHandler.class);
 
-  private final ConcurrentMap<ContainerId, Container> containers = new ConcurrentHashMap<>();
+  private final Set<ContainerId> containers = ConcurrentHashMap.newKeySet();
 
   public NMCallbackHandler() {
   }
@@ -24,7 +23,7 @@ public class NMCallbackHandler extends NMClientAsync.AbstractCallbackHandler {
   public void onContainerStarted(
       ContainerId containerId, Map<String, ByteBuffer> allServiceResponse) {
     LOG.debug("Started container {}", containerId);
-    containers.put(containerId, null);
+    containers.add(containerId);
   }
 
   @Override

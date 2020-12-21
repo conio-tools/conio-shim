@@ -109,6 +109,7 @@ public class ApplicationMaster {
     nmClientAsync = new NMClientAsyncImpl(nmCallbackHandler);
     nmClientAsync.init(conf);
     nmClientAsync.start();
+    // TODO check that callback handlers are active
 
     rmCallbackHandler = new RMCallbackHandler(context, nmClientAsync);
 
