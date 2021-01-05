@@ -14,12 +14,17 @@ Disclaimer: this tool is in pre-alpha stage and under heavy development. It hasn
 
 ## Quickstart
 
-The following command will start a dockerized demo Hadoop cluster and submit a Conio application based on a [sleep pod yaml](./src/test/resources/sleep_pod.yaml).
+To get you started simply use the following command:
 ```bash
 make demo
 ```
 
-After you've finished, stop the cluster with the following command:
+The `make demo` command will:
+- builds all necessary Docker images
+- start a dockerized demo Hadoop cluster
+- submits a Conio application based on a [sleep pod yaml](./src/test/resources/sleep_pod.yaml).
+
+After you've finished, don't forget to stop the cluster with the following command:
 ```bash
 make stop
 ```
