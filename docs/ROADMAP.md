@@ -3,12 +3,9 @@
 ## Core features (targeted for v1.0)
 
 - Support pod yaml fields
-  - Proper multiple container support
   - Support args and command fields
   - Support volumes (hostpath, HDFS maybe?)
-  - Support restart policy
 - Provide status of the application
-- Pod yaml update
 - Add quickstart section
 - Write documentation about configuration options (client and AM)
 - Add MiniYARNCluster integration tests for the AM communication protocols
@@ -16,6 +13,7 @@
 ## Main feature ideas for further releases
 
 - Leverage ZooKeeper for storing yamls
+  - Pod yaml update
 - Deployment support
 - Replicaset support
 - Helm support
