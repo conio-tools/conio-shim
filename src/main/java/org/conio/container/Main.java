@@ -15,13 +15,15 @@ public class Main {
    * Entrypoint of the program.
    */
   public static void main(String[] args) {
+    Client client = new Client();
     try {
-      Client client = new Client();
       client.init(args);
       client.run();
     } catch (Exception e) {
       LOG.error("Fatal exception, exiting.", e);
       System.exit(1);
+    } finally {
+      client.cleanup();
     }
   }
 }

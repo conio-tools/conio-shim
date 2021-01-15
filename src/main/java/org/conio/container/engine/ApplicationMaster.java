@@ -149,6 +149,7 @@ public class ApplicationMaster {
   }
 
   private Path getYamlPath(Configuration conf) throws IOException {
+    // TODO instead of this, copy the data from ZK
     String yamlHdfsPath = secureGetEnv(ENV_YAML_HDFS_PATH);
     FileSystem fs = FileSystem.get(conf);
     String[] localDirs = StringUtils.getTrimmedStrings(

@@ -1,11 +1,13 @@
 package org.conio.container.client;
 
+import static org.apache.zookeeper.ZooDefs.Ids.CREATOR_ALL_ACL;
 import static org.conio.container.Constants.APP_MASTER_JAR;
 import static org.conio.container.Constants.APP_NAME;
 import static org.conio.container.Constants.CONIO_HDFS_ROOT;
 import static org.conio.container.Constants.DEFAULT_AM_MEMORY;
 import static org.conio.container.Constants.DEFAULT_QUEUE_NAME;
 import static org.conio.container.Constants.ENV_YAML_HDFS_PATH;
+import static org.conio.container.Constants.POD_ZK_PATH_TEMPLATE;
 import static org.conio.container.Constants.TYPE_POD;
 
 import java.io.FileNotFoundException;
@@ -21,6 +23,11 @@ import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.IOUtils;
+import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.curator.retry.RetryNTimes;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -47,11 +54,11 @@ import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.client.api.YarnClientApplication;
 import org.apache.hadoop.yarn.client.util.YarnClientUtils;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
-import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.util.DockerClientConfigHandler;
 import org.apache.hadoop.yarn.util.resource.Resources;
 import org.conio.container.engine.ApplicationMaster;
 import org.conio.container.k8s.Pod;
+import org.conio.container.zookeeper.ClientWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,6 +78,7 @@ public class Client {
   private String dockerClientConfig;
   private String yamlFile;
   private String queueName = DEFAULT_QUEUE_NAME;
+  private ClientWrapper zkClient;
 
   private Pod pod;
   private boolean watch;
@@ -110,22 +118,34 @@ public class Client {
     yamlFile = cliParser.getOptionValue(YAML_OPT);
     watch = cliParser.hasOption(WATCH_OPT);
     pod = Pod.parseFromFile(yamlFile);
-    LOG.info("Succesfully parsed pod yaml with name {}", pod.getMetadata().getName());
+    LOG.info("Successfully parsed pod yaml with name {}", pod.getMetadata().getName());
 
     String configuredQueue = cliParser.getOptionValue(QUEUE_OPT);
     if (configuredQueue != null && !configuredQueue.isEmpty()) {
       queueName = configuredQueue;
     }
-    LOG.debug("Starting the application in {} queue", queueName);
+    LOG.debug("Will start the application in {} queue", queueName);
+
+    zkClient = new ClientWrapper("zookeeper:2181");
   }
 
   /**
    * Submits the application and optionally waits until it finishes successfully.
    */
   // TODO set no retry for the AM
-  public void run() throws YarnException, IOException {
+  public void run() throws Exception {
     yarnClient.start();
     LOG.info("YARN client started.");
+
+    zkClient.start();
+    LOG.info("Zookeeper client started.");
+
+    client.create().forPath("/conio");
+    client.create().forPath("/conio/test", "test".getBytes());
+    byte[] bytes = client.getData().forPath("/conio/test");
+
+    String converted = new String(bytes);
+    LOG.info("Value from ZK: {}", converted);
 
     QueueInfo queueInfo = yarnClient.getQueueInfo(queueName);
     if (queueInfo == null) {
@@ -158,11 +178,11 @@ public class Client {
         fs, appMasterJar, APP_MASTER_JAR, applicationId.toString(), localResources, null);
 
     // TODO: support localizable files
-    String yamlHDFSPath = uploadYamlToHDFS();
+    String zkPath = String.format(POD_ZK_PATH_TEMPLATE,
+        pod.getMetadata().getNamespace(), pod.getMetadata().getName());
+    uploadYamlToZookeeper(zkPath);
 
     Map<String, String> env = new HashMap<>();
-    env.put(ENV_YAML_HDFS_PATH, yamlHDFSPath);
-
     setupAppMasterJar(env);
 
     // setting up AM command
@@ -174,6 +194,15 @@ public class Client {
     if (watch) {
       ApplicationMonitor monitor = new ApplicationMonitor(yarnClient, applicationId);
       monitor.run();
+    }
+  }
+
+  private void uploadYamlToZookeeper(String zkPath) {
+    String[] path = zkPath.split("/");
+    String currentPath = "/";
+    for (int i = 1; i < path.length; i++) {
+      currentPath = currentPath + path[i];
+
     }
   }
 
@@ -364,5 +393,14 @@ public class Client {
   private String createAppName() {
     return String.format("%s/%s/%s/%s", APP_NAME, TYPE_POD,
         pod.getMetadata().getExactNamespace(), pod.getMetadata().getName());
+  }
+
+  /**
+   * Cleans up the client: closes the ZK client connection.
+   */
+  public void cleanup() {
+    if (zkClient != null) {
+      zkClient.close();
+    }
   }
 }
