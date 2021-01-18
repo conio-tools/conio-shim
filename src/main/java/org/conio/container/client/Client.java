@@ -4,14 +4,16 @@ import static org.conio.container.Constants.APP_MASTER_JAR;
 import static org.conio.container.Constants.APP_NAME;
 import static org.conio.container.Constants.DEFAULT_AM_MEMORY;
 import static org.conio.container.Constants.DEFAULT_QUEUE_NAME;
-import static org.conio.container.Constants.POD_ZK_PATH_TEMPLATE;
+import static org.conio.container.Constants.DEFAULT_ZK_ROOT_NODE;
+import static org.conio.container.Constants.ENV_NAMESPACE;
+import static org.conio.container.Constants.ENV_POD_NAME;
+import static org.conio.container.Constants.ENV_ZK_ADDRESS;
+import static org.conio.container.Constants.ENV_ZK_ROOT_NODE;
 import static org.conio.container.Constants.TYPE_POD;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,7 +23,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -76,6 +77,8 @@ public class Client {
   private String yamlFile;
   private String queueName = DEFAULT_QUEUE_NAME;
   private ClientWrapper zkClient;
+  private String zkConnectionString;
+  private String zkRoot;
 
   private Pod pod;
   private boolean watch;
@@ -127,7 +130,12 @@ public class Client {
     }
     LOG.debug("Will start the application in {} queue", queueName);
 
-    zkClient = new ClientWrapper("zookeeper:2181", cliParser.getOptionValue(ZK_ROOT_NODE_OPT));
+    zkConnectionString = cliParser.getOptionValue(ZK_CLIENT_OPT);
+    zkRoot = cliParser.getOptionValue(ZK_ROOT_NODE_OPT);
+    if (zkRoot == null) {
+      zkRoot = DEFAULT_ZK_ROOT_NODE;
+    }
+    zkClient = new ClientWrapper(zkConnectionString, zkRoot);
   }
 
   /**
@@ -173,13 +181,14 @@ public class Client {
     addToLocalResources(
         fs, appMasterJar, APP_MASTER_JAR, applicationId.toString(), localResources, null);
 
-    zkClient.uploadPod(pod.getMetadata().getNamespace(), pod.getMetadata().getName(), yamlFile);
+    zkClient.uploadPod(pod.getMetadata().getExactNamespace(), pod.getMetadata().getName(), yamlFile);
 
     Map<String, String> env = new HashMap<>();
+    env.put(ENV_ZK_ADDRESS, zkConnectionString);
+    env.put(ENV_ZK_ROOT_NODE, zkRoot);
+    env.put(ENV_NAMESPACE, pod.getMetadata().getExactNamespace());
+    env.put(ENV_POD_NAME, pod.getMetadata().getName());
     setupAppMasterJar(env);
-
-    // setting up AM command
-    // TODO revisit this part of the code
     setupAppMasterCommand(appContext, applicationId, appName, localResources, fs, env);
 
     yarnClient.submitApplication(appContext);
@@ -230,7 +239,7 @@ public class Client {
       command.append(str).append(" ");
     }
 
-    List<String> commands = new ArrayList<String>();
+    List<String> commands = new ArrayList<>();
     commands.add(command.toString());
 
     // Set up the container launch context for the application master

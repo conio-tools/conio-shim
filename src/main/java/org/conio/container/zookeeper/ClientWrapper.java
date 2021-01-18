@@ -26,7 +26,7 @@ public class ClientWrapper {
   public ClientWrapper(String zkConnectionString, String zkRoot) {
     RetryPolicy retryPolicy = new RetryNTimes(10, 1000);
     zkClient = CuratorFrameworkFactory.newClient(zkConnectionString, retryPolicy);
-    this.zkRoot = zkRoot == null ? DEFAULT_ZK_ROOT_NODE : zkRoot;
+    this.zkRoot = zkRoot;
   }
 
   private String prefixPath(String path) {
@@ -38,8 +38,8 @@ public class ClientWrapper {
    */
   public void start() throws Exception {
     zkClient.start();
-    if (!zkPathExists(zkRoot)) {
-      createZkPath(zkRoot);
+    if (!zkPathExists("")) {
+      createZkPath("");
     }
   }
 
@@ -49,12 +49,22 @@ public class ClientWrapper {
 
   // low level calls
 
+  /**
+   * Creates a ZK path.
+   */
   public void createZkPath(String path) throws Exception {
-    zkClient.create().forPath(prefixPath(path));
+    zkClient.create()
+        .creatingParentsIfNeeded()
+        .forPath(prefixPath(path));
   }
 
+  /**
+   * Creates a ZK path with their parents and setting data if exists.
+   */
   public void createZkPath(String path, String data) throws Exception {
-    zkClient.create().forPath(prefixPath(path), data.getBytes());
+    zkClient.create().orSetData()
+        .creatingParentsIfNeeded()
+        .forPath(prefixPath(path), data.getBytes());
   }
 
   public boolean zkPathExists(String path) throws Exception {

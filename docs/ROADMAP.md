@@ -6,14 +6,13 @@
   - Support args and command fields
   - Support volumes (hostpath, HDFS maybe?)
 - Provide status of the application
-- Add quickstart section
 - Write documentation about configuration options (client and AM)
 - Add MiniYARNCluster integration tests for the AM communication protocols
 
 ## Main feature ideas for further releases
 
-- Leverage ZooKeeper for storing yamls
-  - Pod yaml update
+- Zookeeper support
+  - Update pod status
 - Deployment support
 - Replicaset support
 - Helm support

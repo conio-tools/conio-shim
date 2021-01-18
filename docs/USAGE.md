@@ -29,7 +29,7 @@ java -jar conio-1.0-SNAPSHOT-jar-with-dependencies.jar -yaml k8s-obj.yaml
 
 If you use Conio-nano, you are probably going to need a similar command to start the Conio client in a Docker container that has the required files mounted in the container:
 ```bash
-docker run -it -a stdin -a stdout -a stderr --env-file hadoop.env --network docker-hadoop_default -v $(PWD)/conio:/conio conio/base:master -- sudo -u conio java -jar /conio/conio.jar -yaml /conio/pod.yaml
+docker run -it -a stdin -a stdout -a stderr --env-file hadoop.env --network docker-hadoop_default -v $(PWD)/conio:/conio conio/base:master -- sudo -u conio java -jar /conio/conio.jar -yaml /conio/pod.yaml -zookeeper <zookeeper address>
 ```
 
 Note that the jar containing the dependencies is renamed to _conio.jar_. 
