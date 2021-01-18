@@ -181,7 +181,8 @@ public class Client {
     addToLocalResources(
         fs, appMasterJar, APP_MASTER_JAR, applicationId.toString(), localResources, null);
 
-    zkClient.uploadPod(pod.getMetadata().getExactNamespace(), pod.getMetadata().getName(), yamlFile);
+    zkClient.uploadPod(pod.getMetadata().getExactNamespace(),
+        pod.getMetadata().getName(), yamlFile);
 
     Map<String, String> env = new HashMap<>();
     env.put(ENV_ZK_ADDRESS, zkConnectionString);
