@@ -1,18 +1,17 @@
 package org.conio.container.client;
 
-import static org.apache.zookeeper.ZooDefs.Ids.CREATOR_ALL_ACL;
 import static org.conio.container.Constants.APP_MASTER_JAR;
 import static org.conio.container.Constants.APP_NAME;
-import static org.conio.container.Constants.CONIO_HDFS_ROOT;
 import static org.conio.container.Constants.DEFAULT_AM_MEMORY;
 import static org.conio.container.Constants.DEFAULT_QUEUE_NAME;
-import static org.conio.container.Constants.ENV_YAML_HDFS_PATH;
 import static org.conio.container.Constants.POD_ZK_PATH_TEMPLATE;
 import static org.conio.container.Constants.TYPE_POD;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,12 +21,8 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.curator.RetryPolicy;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.curator.retry.RetryNTimes;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -69,6 +64,8 @@ public class Client {
   private static final String QUEUE_OPT = "queue";
   private static final String WATCH_OPT = "watch";
   private static final String YAML_OPT = "yaml";
+  private static final String ZK_CLIENT_OPT = "zookeeper";
+  private static final String ZK_ROOT_NODE_OPT = "znode";
 
   private final YarnClient yarnClient;
   private final Configuration conf;
@@ -100,8 +97,12 @@ public class Client {
     Options opts = new Options();
     opts.addOption("q", QUEUE_OPT, true, "the queue this application will be submitted");
     opts.addOption("w", WATCH_OPT, false, "watches the application until termination");
-    opts.addOption(
-        "y", YAML_OPT, true, "the yaml file containing the description of the Kubernetes object");
+    opts.addOption("y", YAML_OPT, true,
+        "the yaml file containing the description of the Kubernetes object");
+    opts.addOption("zk", ZK_CLIENT_OPT, true,
+        "the address of the zookeeper instance to connect to");
+    opts.addOption("zn", ZK_ROOT_NODE_OPT, true,
+        "the root znode conio uses for storing data in Zookeeper");
     return opts;
   }
 
@@ -126,7 +127,7 @@ public class Client {
     }
     LOG.debug("Will start the application in {} queue", queueName);
 
-    zkClient = new ClientWrapper("zookeeper:2181");
+    zkClient = new ClientWrapper("zookeeper:2181", cliParser.getOptionValue(ZK_ROOT_NODE_OPT));
   }
 
   /**
@@ -140,12 +141,7 @@ public class Client {
     zkClient.start();
     LOG.info("Zookeeper client started.");
 
-    client.create().forPath("/conio");
-    client.create().forPath("/conio/test", "test".getBytes());
-    byte[] bytes = client.getData().forPath("/conio/test");
-
-    String converted = new String(bytes);
-    LOG.info("Value from ZK: {}", converted);
+    ensureZnodes();
 
     QueueInfo queueInfo = yarnClient.getQueueInfo(queueName);
     if (queueInfo == null) {
@@ -177,10 +173,7 @@ public class Client {
     addToLocalResources(
         fs, appMasterJar, APP_MASTER_JAR, applicationId.toString(), localResources, null);
 
-    // TODO: support localizable files
-    String zkPath = String.format(POD_ZK_PATH_TEMPLATE,
-        pod.getMetadata().getNamespace(), pod.getMetadata().getName());
-    uploadYamlToZookeeper(zkPath);
+    zkClient.uploadPod(pod.getMetadata().getNamespace(), pod.getMetadata().getName(), yamlFile);
 
     Map<String, String> env = new HashMap<>();
     setupAppMasterJar(env);
@@ -197,31 +190,12 @@ public class Client {
     }
   }
 
-  private void uploadYamlToZookeeper(String zkPath) {
-    String[] path = zkPath.split("/");
-    String currentPath = "/";
-    for (int i = 1; i < path.length; i++) {
-      currentPath = currentPath + path[i];
-
+  private void ensureZnodes() throws Exception {
+    if (!zkClient.zkPathExists("/test")) {
+      zkClient.createZkPath("/test", "test");
     }
-  }
-
-  private String uploadYamlToHDFS() throws IOException {
-    Path shellSrc = new Path(yamlFile);
-    FileSystem fs = FileSystem.get(conf);
-    Path shellDst = getPathForYaml(pod);
-    fs.copyFromLocalFile(false, true, shellSrc, shellDst);
-    return shellDst.toUri().toString();
-  }
-
-  private Path getPathForYaml(Pod pod) {
-    Path podTypePath =
-        new Path(new Path(CONIO_HDFS_ROOT, pod.getMetadata().getExactNamespace()), "pod");
-    String podName = pod.getMetadata().getName();
-    if (podName == null) {
-      throw new IllegalArgumentException("Pod name is null");
-    }
-    return new Path(podTypePath, podName);
+    String result = zkClient.getZkPathData("/test");
+    LOG.debug("Znodes exists in Zookeeper. Value of test: {}", result);
   }
 
   private void setupAppMasterCommand(
@@ -391,8 +365,8 @@ public class Client {
   }
 
   private String createAppName() {
-    return String.format("%s/%s/%s/%s", APP_NAME, TYPE_POD,
-        pod.getMetadata().getExactNamespace(), pod.getMetadata().getName());
+    return String.format("%s/%s/%s/%s", APP_NAME, pod.getMetadata().getExactNamespace(),
+        TYPE_POD, pod.getMetadata().getName());
   }
 
   /**
