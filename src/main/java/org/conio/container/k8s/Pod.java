@@ -1,5 +1,6 @@
 package org.conio.container.k8s;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -26,8 +27,16 @@ public class Pod extends Object {
 
     Yaml yaml = new Yaml();
     InputStream inputStream = new FileInputStream(yamlFile);
-
     return yaml.loadAs(inputStream, Pod.class);
+  }
+
+  /**
+   * Parses the input bytes and returns a Pod.
+   */
+  public static Pod parseFromBytes(byte[] bytes) {
+    Yaml yaml = new Yaml();
+    ByteArrayInputStream stream = new ByteArrayInputStream(bytes);
+    return yaml.loadAs(stream, Pod.class);
   }
 
   public PodSpec getSpec() {

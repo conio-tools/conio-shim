@@ -1,25 +1,21 @@
 package org.conio.container.engine;
 
-import static org.conio.container.Constants.ENV_YAML_HDFS_PATH;
+import static org.conio.container.Constants.ENV_NAMESPACE;
+import static org.conio.container.Constants.ENV_POD_NAME;
+import static org.conio.container.Constants.ENV_ZK_ADDRESS;
+import static org.conio.container.Constants.ENV_ZK_ROOT_NODE;
 import static org.conio.container.engine.util.Util.secureGetEnv;
 
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
-import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse;
 import org.apache.hadoop.yarn.api.records.ContainerId;
@@ -37,6 +33,7 @@ import org.apache.hadoop.yarn.security.AMRMTokenIdentifier;
 import org.conio.container.engine.util.Translate;
 import org.conio.container.k8s.Container;
 import org.conio.container.k8s.Pod;
+import org.conio.container.zookeeper.ClientWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,9 +45,7 @@ public class ApplicationMaster {
   private NMClientAsync nmClientAsync;
   private Configuration conf;
   private Context context;
-  private ContainerId amContainerId;
-
-  private int requestId = 0;
+  private ClientWrapper zkClient;
 
   /**
    * Main entrypoint of the Application Master class.
@@ -59,7 +54,7 @@ public class ApplicationMaster {
     ApplicationMaster appMaster = null;
     try {
       appMaster = new ApplicationMaster();
-      appMaster.init(args);
+      appMaster.init();
       appMaster.run();
       appMaster.finish();
     } finally {
@@ -69,37 +64,23 @@ public class ApplicationMaster {
     }
   }
 
-  private static Options createOptions() {
-    // TODO: create a way to handle the same options for the client and the AM
-    Options opts = new Options();
-    opts.addOption("appname", true, "the name of the application");
-    return opts;
-  }
-
-  private void init(String[] args) throws ParseException, IOException {
-    Options opts = createOptions();
-
-    if (args.length == 0) {
-      new HelpFormatter().printHelp("ApplicationMaster", opts);
-      throw new IllegalArgumentException("No args specified for application master to initialize");
-    }
-
-    CommandLine cliParser = new GnuParser().parse(opts, args);
-    String appName = cliParser.getOptionValue("appname");
-    LOG.info("Parsed application name: {}", appName);
-
+  private void init() throws Exception {
     String containerIdStr = secureGetEnv(ApplicationConstants.Environment.CONTAINER_ID.name());
     if (containerIdStr.isEmpty()) {
       throw new RuntimeException("Expected container ID among the environment variables");
     }
-    amContainerId = ContainerId.fromString(containerIdStr);
+    ContainerId amContainerId = ContainerId.fromString(containerIdStr);
     LOG.info("Application ID: {}", amContainerId.getApplicationAttemptId().getApplicationId());
 
     // if this needs to be configured, resources should be added to the AM container context
     conf = new YarnConfiguration();
-    Pod pod = Pod.parseFromFile(getYamlPath(conf).toString());
+
+    zkClient = new ClientWrapper(secureGetEnv(ENV_ZK_ADDRESS), secureGetEnv(ENV_ZK_ROOT_NODE));
+    zkClient.start();
+    Pod pod = Pod.parseFromBytes(
+        zkClient.downloadPod(secureGetEnv(ENV_NAMESPACE), secureGetEnv(ENV_POD_NAME)));
     context = new Context(pod);
-    LOG.info("Loaded pod {}", pod.getMetadata().getName());
+    LOG.info("Pod loaded successfully.");
   }
 
   private void run() throws IOException, YarnException {
@@ -148,7 +129,7 @@ public class ApplicationMaster {
     }
   }
 
-  private Path getYamlPath(Configuration conf) throws IOException {
+  /*private Path getYamlPath(Configuration conf) throws IOException {
     // TODO instead of this, copy the data from ZK
     String yamlHdfsPath = secureGetEnv(ENV_YAML_HDFS_PATH);
     FileSystem fs = FileSystem.get(conf);
@@ -158,7 +139,7 @@ public class ApplicationMaster {
     Path path = new Path(new Path(localDirs[0], amContainerId.toString()), "pod.yaml");
     fs.copyToLocalFile(new Path(yamlHdfsPath), path);
     return path;
-  }
+  }*/
 
   private void tokenSetup() throws IOException {
     Credentials credentials = UserGroupInformation.getCurrentUser().getCredentials();
