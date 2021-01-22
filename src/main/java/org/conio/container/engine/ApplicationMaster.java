@@ -4,12 +4,12 @@ import static org.conio.container.Constants.ENV_NAMESPACE;
 import static org.conio.container.Constants.ENV_POD_NAME;
 import static org.conio.container.Constants.ENV_ZK_ADDRESS;
 import static org.conio.container.Constants.ENV_ZK_ROOT_NODE;
-import static org.conio.container.engine.util.Util.secureGetEnv;
 
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
-import org.apache.commons.cli.Options;
+
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.net.NetUtils;
@@ -17,7 +17,6 @@ import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
-import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ExecutionType;
 import org.apache.hadoop.yarn.api.records.ExecutionTypeRequest;
@@ -30,6 +29,7 @@ import org.apache.hadoop.yarn.client.api.async.impl.NMClientAsyncImpl;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.security.AMRMTokenIdentifier;
+import org.conio.container.engine.util.EnvVarProvider;
 import org.conio.container.engine.util.Translate;
 import org.conio.container.k8s.Container;
 import org.conio.container.k8s.Pod;
@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 public class ApplicationMaster {
   private static final Logger LOG = LoggerFactory.getLogger(ApplicationMaster.class);
 
+  private EnvVarProvider envVars;
   private AMRMClientAsync<AMRMClient.ContainerRequest> amRMClient;
   private RMCallbackHandler rmCallbackHandler;
   private NMClientAsync nmClientAsync;
@@ -51,9 +52,12 @@ public class ApplicationMaster {
    * Main entrypoint of the Application Master class.
    */
   public static void main(String[] args) throws Exception {
-    ApplicationMaster appMaster = null;
+    ApplicationMaster appMaster = new ApplicationMaster();
+    run(appMaster);
+  }
+
+  public static void run(ApplicationMaster appMaster) throws Exception {
     try {
-      appMaster = new ApplicationMaster();
       appMaster.init();
       appMaster.run();
       appMaster.finish();
@@ -65,7 +69,9 @@ public class ApplicationMaster {
   }
 
   private void init() throws Exception {
-    String containerIdStr = secureGetEnv(ApplicationConstants.Environment.CONTAINER_ID.name());
+    this.envVars = getEnvVarProvider();
+
+    String containerIdStr = envVars.get(ApplicationConstants.Environment.CONTAINER_ID.name());
     if (containerIdStr.isEmpty()) {
       throw new RuntimeException("Expected container ID among the environment variables");
     }
@@ -75,11 +81,11 @@ public class ApplicationMaster {
     // if this needs to be configured, resources should be added to the AM container context
     conf = new YarnConfiguration();
 
-    zkClient = new ClientWrapper(secureGetEnv(ENV_ZK_ADDRESS), secureGetEnv(ENV_ZK_ROOT_NODE));
+    zkClient = getZkClient();
     zkClient.start();
     LOG.info("ZK client started");
     Pod pod = Pod.parseFromBytes(
-        zkClient.downloadPod(secureGetEnv(ENV_NAMESPACE), secureGetEnv(ENV_POD_NAME)));
+        zkClient.downloadPod(envVars.get(ENV_NAMESPACE), envVars.get(ENV_POD_NAME)));
     context = new Context(pod);
     LOG.info("Pod loaded successfully");
   }
@@ -145,7 +151,7 @@ public class ApplicationMaster {
     }
     // ByteBuffer allTokens = ByteBuffer.wrap(dob.getData(), 0, dob.getLength());
 
-    String appSubmitterUserName = secureGetEnv(ApplicationConstants.Environment.USER.name());
+    String appSubmitterUserName = envVars.get(ApplicationConstants.Environment.USER.name());
     UserGroupInformation appSubmitterUgi =
         UserGroupInformation.createRemoteUser(appSubmitterUserName);
     appSubmitterUgi.addCredentials(credentials);
@@ -184,5 +190,34 @@ public class ApplicationMaster {
   }
 
   private void cleanup() {
+  }
+
+  // For testing we need to mock these out
+
+  @VisibleForTesting
+  void setAmRMClient(AMRMClientAsync<AMRMClient.ContainerRequest> client) {
+    this.amRMClient = client;
+  }
+
+  @VisibleForTesting
+  void setRmCallbackHandler(RMCallbackHandler handler) {
+    this.rmCallbackHandler = handler;
+  }
+
+  @VisibleForTesting
+  void setNmClientAsync(NMClientAsync client) {
+    this.nmClientAsync = client;
+  }
+
+  @VisibleForTesting
+  ClientWrapper getZkClient() {
+    ClientWrapper zkClient = new ClientWrapper(envVars.get(ENV_ZK_ROOT_NODE));
+    zkClient.init(envVars.get(ENV_ZK_ADDRESS));
+    return zkClient;
+  }
+
+  @VisibleForTesting
+  EnvVarProvider getEnvVarProvider() {
+    return new EnvVarProvider();
   }
 }

@@ -135,7 +135,8 @@ public class Client {
     if (zkRoot == null) {
       zkRoot = DEFAULT_ZK_ROOT_NODE;
     }
-    zkClient = new ClientWrapper(zkConnectionString, zkRoot);
+    zkClient = new ClientWrapper(zkRoot);
+    zkClient.init(zkConnectionString);
   }
 
   /**
