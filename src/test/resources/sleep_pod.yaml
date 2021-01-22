@@ -1,9 +1,12 @@
 apiVersion: v1
 kind: Pod
 metadata:
+  namespace: test
   name: sleep-pod
   labels:
     app: sleep
+  annotations:
+    test: test_value
 spec:
   containers:
     - image: busybox
