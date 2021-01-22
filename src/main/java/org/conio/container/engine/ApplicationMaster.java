@@ -5,11 +5,10 @@ import static org.conio.container.Constants.ENV_POD_NAME;
 import static org.conio.container.Constants.ENV_ZK_ADDRESS;
 import static org.conio.container.Constants.ENV_ZK_ROOT_NODE;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
-
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.net.NetUtils;
@@ -53,10 +52,10 @@ public class ApplicationMaster {
    */
   public static void main(String[] args) throws Exception {
     ApplicationMaster appMaster = new ApplicationMaster();
-    run(appMaster);
+    runAppMaster(appMaster);
   }
 
-  public static void run(ApplicationMaster appMaster) throws Exception {
+  static void runAppMaster(ApplicationMaster appMaster) throws Exception {
     try {
       appMaster.init();
       appMaster.run();
