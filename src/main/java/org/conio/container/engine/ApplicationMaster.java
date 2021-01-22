@@ -92,15 +92,14 @@ public class ApplicationMaster {
   private void run() throws IOException, YarnException {
     tokenSetup();
 
-    NMCallbackHandler nmCallbackHandler = new NMCallbackHandler();
-    nmClientAsync = new NMClientAsyncImpl(nmCallbackHandler);
+    nmClientAsync = getNmClientAsync();
     nmClientAsync.init(conf);
     nmClientAsync.start();
     // TODO check that callback handlers are active
 
-    rmCallbackHandler = new RMCallbackHandler(context, nmClientAsync);
+    rmCallbackHandler = getRmCallbackHandler();
 
-    amRMClient = AMRMClientAsync.createAMRMClientAsync(1000, rmCallbackHandler);
+    amRMClient = getAmRMClient();
     amRMClient.init(conf);
     amRMClient.start();
 
@@ -194,18 +193,18 @@ public class ApplicationMaster {
   // For testing we need to mock these out
 
   @VisibleForTesting
-  void setAmRMClient(AMRMClientAsync<AMRMClient.ContainerRequest> client) {
-    this.amRMClient = client;
+  AMRMClientAsync<AMRMClient.ContainerRequest> getAmRMClient() {
+    return AMRMClientAsync.createAMRMClientAsync(1000, rmCallbackHandler);
   }
 
   @VisibleForTesting
-  void setRmCallbackHandler(RMCallbackHandler handler) {
-    this.rmCallbackHandler = handler;
+  RMCallbackHandler getRmCallbackHandler() {
+    return new RMCallbackHandler(context, nmClientAsync);
   }
 
   @VisibleForTesting
-  void setNmClientAsync(NMClientAsync client) {
-    this.nmClientAsync = client;
+  NMClientAsync getNmClientAsync() {
+    return new NMClientAsyncImpl(new NMCallbackHandler());
   }
 
   @VisibleForTesting
