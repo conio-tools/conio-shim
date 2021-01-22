@@ -5,17 +5,34 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import com.google.common.collect.ImmutableList;
+
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
 public class TestPod {
   @Test
   public void testParseFromFile() throws FileNotFoundException {
     Pod pod = Pod.parseFromFile("src/test/resources/sleep_pod.yaml");
+    testPod(pod);
+  }
 
+  @Test
+  public void testParseFromBytes() throws IOException {
+    File file = new File("src/test/resources/sleep_pod.yaml");
+    byte[] bytes = FileUtils.readFileToByteArray(file);
+    Pod pod = Pod.parseFromBytes(bytes);
+    testPod(pod);
+  }
+
+  private void testPod(Pod pod) {
+    testObject(pod);
     testMetadata(pod.getMetadata());
 
     // pod
@@ -27,11 +44,17 @@ public class TestPod {
     testContainer(podSpec.getContainers().get(0));
   }
 
+  private void testObject(Object obj) {
+    assertEquals("v1", obj.getApiVersion());
+    assertEquals("Pod", obj.getKind());
+  }
+
   private void testMetadata(Metadata meta) {
-    assertNull(meta.getAnnotations());
+    Map<String, String> annotations = meta.getAnnotations();
+    assertEquals("test_value", annotations.get("test"));
     assertEquals("sleep-pod", meta.getName());
-    assertNull(meta.getNamespace());
-    assertEquals("default", meta.getExactNamespace());
+    assertEquals("test", meta.getNamespace());
+    assertEquals("test", meta.getExactNamespace());
     Map<String, String> labels = meta.getLabels();
     assertEquals("sleep", labels.get("app"));
   }
