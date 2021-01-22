@@ -13,21 +13,20 @@ import org.junit.Test;
 public class TestApplicationMaster {
   @Test
   public void testApplicationMaster() throws Exception {
-    AMRMClientAsync<AMRMClient.ContainerRequest> amrmClient =
-        mock(AMRMClientAsyncContainerRequest.class);
-    RMCallbackHandler rmCallbackHandler = mock(RMCallbackHandler.class);
-    NMClientAsync nmClient = mock(NMClientAsync.class);
-    MockClientWrapper mockZkClient = new MockClientWrapper();
+    ApplicationMaster am = spy(new ApplicationMaster());
     MockEnvVarProvider envVars = new MockEnvVarProvider();
     envVars.put(ApplicationConstants.Environment.CONTAINER_ID.name(),
         "container_1111111111111_0001_01_000001");
     envVars.put(ApplicationConstants.Environment.USER.name(), "test");
-
-    ApplicationMaster am = spy(new ApplicationMaster());
     doReturn(envVars).when(am).getEnvVarProvider();
+    MockClientWrapper mockZkClient = new MockClientWrapper();
     doReturn(mockZkClient).when(am).getZkClient();
+    AMRMClientAsync<AMRMClient.ContainerRequest> amrmClient =
+        mock(AMRMClientAsyncContainerRequest.class);
     am.setAmRMClient(amrmClient);
+    RMCallbackHandler rmCallbackHandler = mock(RMCallbackHandler.class);
     am.setRmCallbackHandler(rmCallbackHandler);
+    NMClientAsync nmClient = mock(NMClientAsync.class);
     am.setNmClientAsync(nmClient);
 
     ApplicationMaster.runAppMaster(am);
