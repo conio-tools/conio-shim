@@ -1,9 +1,8 @@
 package org.conio.container.engine;
 
-import org.conio.container.engine.util.EnvVarProvider;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.conio.container.engine.util.EnvVarProvider;
 
 public class MockEnvVarProvider extends EnvVarProvider {
   private final Map<String, String> envs = new HashMap<>();

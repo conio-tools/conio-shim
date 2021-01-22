@@ -1,9 +1,8 @@
 package org.conio.container.engine;
 
+import java.io.File;
 import org.apache.commons.io.FileUtils;
 import org.conio.container.zookeeper.ClientWrapper;
-
-import java.io.File;
 
 public class MockClientWrapper extends ClientWrapper {
   public MockClientWrapper() {

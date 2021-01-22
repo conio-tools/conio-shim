@@ -2,12 +2,10 @@ package org.conio.container.engine.util;
 
 import static org.junit.Assert.assertEquals;
 
+import com.google.common.collect.ImmutableMap;
 import java.io.FileNotFoundException;
 import java.util.Map;
-
-import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.yarn.api.records.Resource;
-import org.conio.container.engine.util.Translate;
 import org.conio.container.k8s.Container;
 import org.conio.container.k8s.Pod;
 import org.conio.container.k8s.ResourceRequirements;
