@@ -77,10 +77,11 @@ public class ApplicationMaster {
 
     zkClient = new ClientWrapper(secureGetEnv(ENV_ZK_ADDRESS), secureGetEnv(ENV_ZK_ROOT_NODE));
     zkClient.start();
+    LOG.info("ZK client started");
     Pod pod = Pod.parseFromBytes(
         zkClient.downloadPod(secureGetEnv(ENV_NAMESPACE), secureGetEnv(ENV_POD_NAME)));
     context = new Context(pod);
-    LOG.info("Pod loaded successfully.");
+    LOG.info("Pod loaded successfully");
   }
 
   private void run() throws IOException, YarnException {
@@ -100,8 +101,7 @@ public class ApplicationMaster {
 
     String appMasterHostname = NetUtils.getHostname();
 
-    RegisterApplicationMasterResponse response =
-        amRMClient.registerApplicationMaster(appMasterHostname, -1, "", null);
+    amRMClient.registerApplicationMaster(appMasterHostname, -1, "", null);
 
     controlLoop();
   }
@@ -112,13 +112,13 @@ public class ApplicationMaster {
   }
 
   private void controlLoop() {
+    ContainerTracker containerTracker = context.getContainerTracker();
     while (true) {
-      List<Container> unlaunchedContainers =
-          context.getContainerTracker().getUnlaunchedContainers();
+      List<Container> unlaunchedContainers = containerTracker.getUnlaunchedContainers();
       for (Container unlaunchedContainer : unlaunchedContainers) {
         addContainerRequest(unlaunchedContainer);
       }
-      if (context.getContainerTracker().hasFinished()) {
+      if (containerTracker.hasFinished()) {
         break;
       }
       try {
@@ -128,18 +128,6 @@ public class ApplicationMaster {
       }
     }
   }
-
-  /*private Path getYamlPath(Configuration conf) throws IOException {
-    // TODO instead of this, copy the data from ZK
-    String yamlHdfsPath = secureGetEnv(ENV_YAML_HDFS_PATH);
-    FileSystem fs = FileSystem.get(conf);
-    String[] localDirs = StringUtils.getTrimmedStrings(
-        secureGetEnv(ApplicationConstants.Environment.LOCAL_DIRS.key()));
-
-    Path path = new Path(new Path(localDirs[0], amContainerId.toString()), "pod.yaml");
-    fs.copyToLocalFile(new Path(yamlHdfsPath), path);
-    return path;
-  }*/
 
   private void tokenSetup() throws IOException {
     Credentials credentials = UserGroupInformation.getCurrentUser().getCredentials();
