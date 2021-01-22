@@ -17,16 +17,19 @@ import org.apache.curator.retry.RetryNTimes;
  * under the root node given as parameter in construction time.
  */
 public class ClientWrapper {
-  private final CuratorFramework zkClient;
+  private CuratorFramework zkClient;
   private final String zkRoot;
 
   /**
    * Creates a ClientWrapper from the ZK connection string and the root znode.
    */
-  public ClientWrapper(String zkConnectionString, String zkRoot) {
-    RetryPolicy retryPolicy = new RetryNTimes(10, 1000);
-    zkClient = CuratorFrameworkFactory.newClient(zkConnectionString, retryPolicy);
+  public ClientWrapper(String zkRoot) {
     this.zkRoot = zkRoot;
+  }
+
+  public void init(String zkConnectionString) {
+    RetryPolicy retryPolicy = new RetryNTimes(10, 1000);
+    this.zkClient = CuratorFrameworkFactory.newClient(zkConnectionString, retryPolicy);
   }
 
   private String prefixPath(String path) {
