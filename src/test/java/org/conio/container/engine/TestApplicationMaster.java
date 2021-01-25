@@ -1,18 +1,16 @@
 package org.conio.container.engine;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
 import org.apache.hadoop.yarn.api.ApplicationConstants;
-import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse;
 import org.apache.hadoop.yarn.client.api.AMRMClient;
 import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
-import org.apache.hadoop.yarn.client.api.async.NMClientAsync;
+import org.conio.container.engine.mock.MockAMRMImpl;
+import org.conio.container.engine.mock.MockClientWrapper;
+import org.conio.container.engine.mock.MockEnvVarProvider;
+import org.conio.container.engine.mock.MockNMClientAsync;
 import org.junit.Test;
 
 public class TestApplicationMaster {
@@ -26,20 +24,19 @@ public class TestApplicationMaster {
     doReturn(envVars).when(am).getEnvVarProvider();
     MockClientWrapper mockZkClient = new MockClientWrapper();
     doReturn(mockZkClient).when(am).getZkClient();
-    AMRMClientAsync<AMRMClient.ContainerRequest> amrmClient =
-        mock(AMRMClientAsyncContainerRequest.class);
-    doNothing().when(amrmClient).init(any());
-    doNothing().when(amrmClient).start();
-    RegisterApplicationMasterResponse resp =
-        RegisterApplicationMasterResponse.newInstance(
-            null, null, null, null,  null, null, null);
-    doReturn(resp).when(amrmClient).registerApplicationMaster(anyString(), anyInt(), anyString(), any());
-    doReturn(amrmClient).when(am).getAmRMClient();
-    RMCallbackHandler rmCallbackHandler = mock(RMCallbackHandler.class);
-    doReturn(rmCallbackHandler).when(am).getRmCallbackHandler();
-    NMClientAsync nmClient = mock(NMClientAsync.class);
+    MockNMClientAsync nmClient = new MockNMClientAsync();
     doReturn(nmClient).when(am).getNmClientAsync();
 
-    ApplicationMaster.runAppMaster(am);
+    // Run the application master
+    am.init();
+
+    RMCallbackHandler rmCallbackHandler = new RMCallbackHandler(am.getContext(), nmClient);
+    nmClient.setRMCallbackHandler(rmCallbackHandler);
+    AMRMClientAsync<AMRMClient.ContainerRequest> amrmClient = new MockAMRMImpl(rmCallbackHandler);
+    doReturn(amrmClient).when(am).getAmRMClient();
+
+    am.run();
+    am.finish();
+    am.cleanup();
   }
 }
