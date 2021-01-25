@@ -4,6 +4,7 @@ import static org.conio.container.Constants.ENV_NAMESPACE;
 import static org.conio.container.Constants.ENV_POD_NAME;
 import static org.conio.container.Constants.ENV_ZK_ADDRESS;
 import static org.conio.container.Constants.ENV_ZK_ROOT_NODE;
+import static org.conio.container.Constants.LOOP_TIME;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
@@ -67,7 +68,7 @@ public class ApplicationMaster {
     }
   }
 
-  private void init() throws Exception {
+  void init() throws Exception {
     this.envVars = getEnvVarProvider();
 
     String containerIdStr = envVars.get(ApplicationConstants.Environment.CONTAINER_ID.name());
@@ -89,7 +90,7 @@ public class ApplicationMaster {
     LOG.info("Pod loaded successfully");
   }
 
-  private void run() throws IOException, YarnException {
+  void run() throws IOException, YarnException {
     tokenSetup();
 
     nmClientAsync = getNmClientAsync();
@@ -126,7 +127,7 @@ public class ApplicationMaster {
         break;
       }
       try {
-        Thread.sleep(200);
+        Thread.sleep(LOOP_TIME);
       } catch (InterruptedException ie) {
         return;
       }
@@ -170,7 +171,7 @@ public class ApplicationMaster {
         "");
   }
 
-  private void finish() {
+  void finish() {
     LOG.info("Application completed, cleaning up");
 
     // When the application completes, it should stop all running containers
@@ -187,7 +188,7 @@ public class ApplicationMaster {
     amRMClient.stop();
   }
 
-  private void cleanup() {
+  void cleanup() {
   }
 
   // For testing we need to mock these out
@@ -217,5 +218,10 @@ public class ApplicationMaster {
   @VisibleForTesting
   EnvVarProvider getEnvVarProvider() {
     return new EnvVarProvider();
+  }
+
+  @VisibleForTesting
+  Context getContext() {
+    return context;
   }
 }

@@ -15,6 +15,8 @@ public class Constants {
   public static final String ENV_NAMESPACE = "CONIO_NAMESPACE";
   public static final String ENV_POD_NAME = "CONIO_POD_NAME";
 
+  public static final int LOOP_TIME = 100;
+
   private Constants() {
   }
 }
