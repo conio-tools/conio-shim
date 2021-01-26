@@ -31,7 +31,7 @@ import static org.conio.container.Constants.LOOP_TIME;
 public class MockAMRMImpl extends AMRMClientAsync<AMRMClient.ContainerRequest> {
   private static final Logger LOG = LoggerFactory.getLogger(MockAMRMImpl.class);
 
-  private RMCallbackHandler rmCallbackHandler;
+  private final RMCallbackHandler rmCallbackHandler;
 
   public MockAMRMImpl(RMCallbackHandler rmCallbackHandler) {
     super(0, null);

@@ -1,7 +1,6 @@
 package org.conio.container.engine;
 
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
 import org.apache.hadoop.yarn.api.ApplicationConstants;
