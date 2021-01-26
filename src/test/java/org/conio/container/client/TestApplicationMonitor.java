@@ -23,7 +23,7 @@ public class TestApplicationMonitor {
             "test-queue", "test-name", "test-host", 0, null,
             YarnApplicationState.FINISHED, "", "", 0, 0, 0,
             FinalApplicationStatus.SUCCEEDED, null, "", 0, "", null);
-      when(client.getApplicationReport(appId)).thenReturn(report);
+    when(client.getApplicationReport(appId)).thenReturn(report);
     return client;
   }
 
