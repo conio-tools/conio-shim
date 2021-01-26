@@ -1,5 +1,9 @@
 package org.conio.container.engine.mock;
 
+import static org.conio.container.Constants.LOOP_TIME;
+
+import java.util.Collections;
+import java.util.List;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
@@ -8,11 +12,6 @@ import org.apache.hadoop.yarn.api.records.ContainerStatus;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.client.api.async.NMClientAsync;
 import org.conio.container.engine.RMCallbackHandler;
-
-import java.util.Collections;
-import java.util.List;
-
-import static org.conio.container.Constants.LOOP_TIME;
 
 public class MockNMClientAsync extends NMClientAsync {
   private RMCallbackHandler rmCallbackHandler;
@@ -26,7 +25,8 @@ public class MockNMClientAsync extends NMClientAsync {
   }
 
   @Override
-  public void startContainerAsync(Container container, ContainerLaunchContext containerLaunchContext) {
+  public void startContainerAsync(
+      Container container, ContainerLaunchContext containerLaunchContext) {
     Thread t = new Thread(() -> {
       try {
         Thread.sleep(LOOP_TIME);
@@ -52,7 +52,8 @@ public class MockNMClientAsync extends NMClientAsync {
   }
 
   @Override
-  public void reInitializeContainerAsync(ContainerId containerId, ContainerLaunchContext containerLaunchContext, boolean b) {
+  public void reInitializeContainerAsync(
+      ContainerId containerId, ContainerLaunchContext containerLaunchContext, boolean b) {
 
   }
 
