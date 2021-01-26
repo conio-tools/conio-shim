@@ -7,7 +7,6 @@
   - Support volumes (hostpath, HDFS maybe?)
 - Provide status of the application
 - Write documentation about configuration options (client and AM)
-- Add MiniYARNCluster integration tests for the AM communication protocols
 
 ## Main feature ideas for further releases
 
