@@ -189,6 +189,7 @@ public class ApplicationMaster {
   }
 
   void cleanup() {
+    zkClient.close();
   }
 
   // For testing we need to mock these out

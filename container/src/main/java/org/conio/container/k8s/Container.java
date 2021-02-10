@@ -7,6 +7,7 @@ import java.util.List;
 
 public class Container {
   private List<EnvVar> env;
+  private List<String> args;
   private List<String> command;
   private String image;
   private String imagePullPolicy;
@@ -22,6 +23,14 @@ public class Container {
 
   public void setEnv(List<EnvVar> env) {
     this.env = env;
+  }
+
+  public List<String> getArgs() {
+    return args;
+  }
+
+  public void setArgs(List<String> args) {
+    this.args = args;
   }
 
   public List<String> getCommand() {
