@@ -8,8 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
-
-import org.conio.container.Constants;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.Options;
@@ -43,6 +41,7 @@ import org.apache.hadoop.yarn.client.util.YarnClientUtils;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.DockerClientConfigHandler;
 import org.apache.hadoop.yarn.util.resource.Resources;
+import org.conio.container.Constants;
 import org.conio.container.engine.ApplicationMaster;
 import org.conio.container.k8s.Pod;
 import org.conio.container.zookeeper.ClientWrapper;
