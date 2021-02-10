@@ -2,8 +2,7 @@
 
 ## Core features (targeted for v1.0)
 
-- Support pod yaml fields
-  - Support args and command fields
+- Support additional pod yaml fields
   - Support volumes (hostpath, HDFS maybe?)
 - Provide status of the application
 - Write documentation about configuration options (client and AM)

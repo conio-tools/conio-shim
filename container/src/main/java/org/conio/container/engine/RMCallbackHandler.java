@@ -2,6 +2,7 @@ package org.conio.container.engine;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,15 +59,33 @@ public class RMCallbackHandler extends AMRMClientAsync.AbstractCallbackHandler {
       Map<String, String> env = new HashMap<>();
       env.put("YARN_CONTAINER_RUNTIME_TYPE", "docker");
       env.put("YARN_CONTAINER_RUNTIME_DOCKER_IMAGE", container.getImage());
-      env.put("YARN_CONTAINER_RUNTIME_DOCKER_RUN_OVERRIDE_DISABLE", "true");
+      env.put("YARN_CONTAINER_RUNTIME_DOCKER_RUN_OVERRIDE_DISABLE",
+          String.valueOf(container.getCommand() != null || container.getArgs() != null));
       // TODO parameterize this
       env.put("YARN_CONTAINER_RUNTIME_DOCKER_DELAYED_REMOVAL", "true");
       fillEnvMapFromPod(container, env);
 
+      List<String> command;
+
+      if (container.getArgs() != null) {
+        if (container.getCommand() != null) {
+          command = new ArrayList<>(container.getCommand());
+          command.addAll(container.getArgs());
+        } else {
+          command = container.getArgs();
+        }
+      } else {
+        if (container.getCommand() != null) {
+          command = new ArrayList<>(container.getCommand());
+        } else {
+          command = new ArrayList<>();
+        }
+      }
+
       LOG.info("Initialized ContainerLaunchContext");
       ContainerLaunchContext ctx =
           ContainerLaunchContext.newInstance(
-              new HashMap<>(), env, container.getCommand(),
+              new HashMap<>(), env, command,
               null, allTokens.duplicate(), null, null);
       nmClientAsync.startContainerAsync(allocatedContainer, ctx);
     }
