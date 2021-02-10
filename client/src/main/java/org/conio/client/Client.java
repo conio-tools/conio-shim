@@ -1,15 +1,4 @@
-package org.conio.container.client;
-
-import static org.conio.container.Constants.APP_MASTER_JAR;
-import static org.conio.container.Constants.APP_NAME;
-import static org.conio.container.Constants.DEFAULT_AM_MEMORY;
-import static org.conio.container.Constants.DEFAULT_QUEUE_NAME;
-import static org.conio.container.Constants.DEFAULT_ZK_ROOT_NODE;
-import static org.conio.container.Constants.ENV_NAMESPACE;
-import static org.conio.container.Constants.ENV_POD_NAME;
-import static org.conio.container.Constants.ENV_ZK_ADDRESS;
-import static org.conio.container.Constants.ENV_ZK_ROOT_NODE;
-import static org.conio.container.Constants.TYPE_POD;
+package org.conio.client;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -19,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
+
+import org.conio.container.Constants;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.Options;
@@ -75,7 +66,7 @@ public class Client {
   private final String appMasterJar = "/conio/conio.jar";
   private String dockerClientConfig;
   private String yamlFile;
-  private String queueName = DEFAULT_QUEUE_NAME;
+  private String queueName = Constants.DEFAULT_QUEUE_NAME;
   private ClientWrapper zkClient;
   private String zkConnectionString;
   private String zkRoot;
@@ -83,7 +74,9 @@ public class Client {
   private Pod pod;
   private boolean watch;
 
-  /** Client is the entrypoint of the tool. */
+  /**
+   * Client is the entrypoint of the tool.
+   */
   public Client() {
     conf = new YarnConfiguration();
     // TODO make this configurable
@@ -110,12 +103,27 @@ public class Client {
   }
 
   /**
-   *  Initializes the client by parsing the input arguments.
+   * Initializes the client by parsing the input arguments.
    */
   public void init(String[] args) throws ParseException, FileNotFoundException {
     if (args.length == 0) {
       throw new IllegalArgumentException("No args specified for client to initialize");
     }
+
+    LOG.info(args[0]);
+
+    switch (args[0]) {
+      case "create":
+        // submit
+        break;
+      case "get":
+        // get status
+        break;
+      default:
+        // could not find command
+        break;
+    }
+    // TODO forward the rest of the args to the specific command
 
     CommandLine cliParser = new GnuParser().parse(opts, args);
 
@@ -133,7 +141,7 @@ public class Client {
     zkConnectionString = cliParser.getOptionValue(ZK_CLIENT_OPT);
     zkRoot = cliParser.getOptionValue(ZK_ROOT_NODE_OPT);
     if (zkRoot == null) {
-      zkRoot = DEFAULT_ZK_ROOT_NODE;
+      zkRoot = Constants.DEFAULT_ZK_ROOT_NODE;
     }
     zkClient = new ClientWrapper(zkRoot);
     zkClient.init(zkConnectionString);
@@ -180,16 +188,16 @@ public class Client {
 
     // add AM as resource
     addToLocalResources(
-        fs, appMasterJar, APP_MASTER_JAR, applicationId.toString(), localResources, null);
+        fs, appMasterJar, Constants.APP_MASTER_JAR, applicationId.toString(), localResources, null);
 
     zkClient.uploadPod(pod.getMetadata().getExactNamespace(),
         pod.getMetadata().getName(), yamlFile);
 
     Map<String, String> env = new HashMap<>();
-    env.put(ENV_ZK_ADDRESS, zkConnectionString);
-    env.put(ENV_ZK_ROOT_NODE, zkRoot);
-    env.put(ENV_NAMESPACE, pod.getMetadata().getExactNamespace());
-    env.put(ENV_POD_NAME, pod.getMetadata().getName());
+    env.put(Constants.ENV_ZK_ADDRESS, zkConnectionString);
+    env.put(Constants.ENV_ZK_ROOT_NODE, zkRoot);
+    env.put(Constants.ENV_NAMESPACE, pod.getMetadata().getExactNamespace());
+    env.put(Constants.ENV_POD_NAME, pod.getMetadata().getName());
     setupAppMasterJar(env);
     setupAppMasterCommand(appContext, applicationId, appName, localResources, fs, env);
 
@@ -225,7 +233,7 @@ public class Client {
     // e.g. C:/Program Files/Java...
     vargs.add("\"" + ApplicationConstants.Environment.JAVA_HOME.$$() + "/bin/java\"");
     // Set Xmx based on am memory size
-    vargs.add("-Xmx" + DEFAULT_AM_MEMORY + "m");
+    vargs.add("-Xmx" + Constants.DEFAULT_AM_MEMORY + "m");
     // Set class name
     vargs.add(ApplicationMaster.class.getName());
 
@@ -347,7 +355,7 @@ public class Client {
       Map<String, LocalResource> localResources,
       String resources)
       throws IOException {
-    String suffix = getRelativePath(APP_NAME, appId, fileDstPath);
+    String suffix = getRelativePath(Constants.APP_NAME, appId, fileDstPath);
     Path dst = new Path(fs.getHomeDirectory(), suffix);
     if (fileSrcPath == null) {
       FSDataOutputStream ostream = null;
@@ -376,8 +384,8 @@ public class Client {
   }
 
   private String createAppName() {
-    return String.format("%s/%s/%s/%s", APP_NAME, pod.getMetadata().getExactNamespace(),
-        TYPE_POD, pod.getMetadata().getName());
+    return String.format("%s/%s/%s/%s", Constants.APP_NAME, pod.getMetadata().getExactNamespace(),
+        Constants.TYPE_POD, pod.getMetadata().getName());
   }
 
   /**

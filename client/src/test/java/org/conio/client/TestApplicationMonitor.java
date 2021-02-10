@@ -1,4 +1,4 @@
-package org.conio.container.client;
+package org.conio.client;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

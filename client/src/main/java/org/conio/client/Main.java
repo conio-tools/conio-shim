@@ -1,6 +1,5 @@
-package org.conio.container;
+package org.conio.client;
 
-import org.conio.container.client.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
