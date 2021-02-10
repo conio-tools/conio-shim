@@ -1,4 +1,4 @@
-package org.conio.container.client;
+package org.conio.client;
 
 import java.io.IOException;
 import org.apache.hadoop.yarn.api.records.ApplicationId;

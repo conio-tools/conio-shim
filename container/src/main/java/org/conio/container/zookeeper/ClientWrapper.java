@@ -1,6 +1,5 @@
 package org.conio.container.zookeeper;
 
-import static org.conio.container.Constants.DEFAULT_ZK_ROOT_NODE;
 import static org.conio.container.Constants.POD_ZK_PATH_TEMPLATE;
 
 import java.io.File;

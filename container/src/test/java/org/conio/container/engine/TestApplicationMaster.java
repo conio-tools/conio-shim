@@ -11,11 +11,12 @@ import org.conio.container.engine.mock.MockClientWrapper;
 import org.conio.container.engine.mock.MockEnvVarProvider;
 import org.conio.container.engine.mock.MockNMClientAsync;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class TestApplicationMaster {
   @Test(timeout = 20000)
   public void testApplicationMaster() throws Exception {
-    ApplicationMaster am = spy(new ApplicationMaster());
+    ApplicationMaster am = Mockito.spy(new ApplicationMaster());
     MockEnvVarProvider envVars = new MockEnvVarProvider();
     envVars.put(ApplicationConstants.Environment.CONTAINER_ID.name(),
         "container_1111111111111_0001_01_000001");
