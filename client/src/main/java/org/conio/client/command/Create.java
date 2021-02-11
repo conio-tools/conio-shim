@@ -4,6 +4,7 @@ import static org.conio.client.command.option.CLIOption.QUEUE;
 import static org.conio.client.command.option.CLIOption.WATCH;
 import static org.conio.client.command.option.CLIOption.YAML;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -55,34 +56,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Create implements Command {
-
   private static final Logger LOG = LoggerFactory.getLogger(Create.class);
 
-  private final YarnClient yarnClient;
-  private final Configuration conf;
+  private static final String APP_MASTER_JAR = "/conio/conio.jar";
 
-  private final String appMasterJar = "/conio/conio.jar";
-  private String dockerClientConfig;
+  private YarnClient yarnClient;
+  private ClientWrapperWithOptions zkClient;
+  private Configuration conf;
+
   private String yamlFile;
-  private String queueName = Constants.DEFAULT_QUEUE_NAME;
-  private final ClientWrapperWithOptions zkClient;
-
   private Pod pod;
   private boolean watch;
+  private String queueName = Constants.DEFAULT_QUEUE_NAME;
+  private String dockerClientConfig;
 
   /**
-   * Create {@code Command} is responsible for creating pods from the client.
+   * Create {@code Command} is responsible for creating pods
+   * using the input arguments from the client.
    */
   public Create() {
-    conf = new YarnConfiguration();
-    // TODO make this configurable
-    conf.addResource(new Path("/etc/hadoop/core-site.xml"));
-    conf.addResource(new Path("/etc/hadoop/hdfs-site.xml"));
-    conf.addResource(new Path("/etc/hadoop/yarn-site.xml"));
-    conf.reloadConfiguration();
-    yarnClient = YarnClient.createYarnClient();
-    yarnClient.init(conf);
-    zkClient = new ClientWrapperWithOptions();
   }
 
   @Override
@@ -95,9 +87,17 @@ public class Create implements Command {
 
   @Override
   public void init(String[] args) throws ParseException, FileNotFoundException {
-    Options opts = collectOptions();
-    CommandLine cliParser = new GnuParser().parse(opts, args);
+    conf = new YarnConfiguration();
 
+    // TODO make this configurable
+    conf.addResource(new Path("/etc/hadoop/core-site.xml"));
+    conf.addResource(new Path("/etc/hadoop/hdfs-site.xml"));
+    conf.addResource(new Path("/etc/hadoop/yarn-site.xml"));
+    conf.reloadConfiguration();
+
+    initializeClients();
+
+    CommandLine cliParser = new GnuParser().parse(collectOptions(), args);
     yamlFile = cliParser.getOptionValue(YAML.option());
     watch = cliParser.hasOption(WATCH.option());
     pod = Pod.parseFromFile(yamlFile);
@@ -110,6 +110,13 @@ public class Create implements Command {
     LOG.debug("Will start the application in {} queue", queueName);
 
     zkClient.init(cliParser);
+  }
+
+  @VisibleForTesting
+  void initializeClients() {
+    yarnClient = YarnClient.createYarnClient();
+    yarnClient.init(conf);
+    zkClient = new ClientWrapperWithOptions();
   }
 
   /**
@@ -152,9 +159,8 @@ public class Create implements Command {
     ApplicationId applicationId = appContext.getApplicationId();
 
     // add AM as resource
-    addToLocalResources(
-        fs, appMasterJar, Constants.APP_MASTER_JAR, applicationId.toString(), localResources, null);
-
+    addToLocalResources(fs, APP_MASTER_JAR, Constants.APP_MASTER_JAR,
+        applicationId.toString(), localResources, null);
     zkClient.uploadPod(pod.getMetadata().getExactNamespace(),
         pod.getMetadata().getName(), yamlFile);
 

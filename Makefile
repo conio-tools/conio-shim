@@ -25,7 +25,7 @@ submit: package
 	echo "Building the conio client container..."
 	cd conio-nano && make conio
 	echo "Submitting sleep yaml pod to Hadoop..."
-	docker run -it -a stdin -a stdout -a stderr --env-file conio-nano/hadoop.env --network conio-nano_default -v $(PWD)/conio-nano/conio:/conio conio/base:master -- sudo -u conio java -jar /conio/conio.jar -yaml /conio/sleep_pod.yaml -queue default -wait -zookeeper zookeeper:2181
+	docker run -it -a stdin -a stdout -a stderr --env-file conio-nano/hadoop.env --network conio-nano_default -v $(PWD)/conio-nano/conio:/conio conio/base:master -- sudo -u conio java -jar /conio/conio.jar create -yaml /conio/sleep_pod.yaml -queue default -wait -zookeeper zookeeper:2181
 
 demo: conio-nano
 	echo "Starting dockerized Hadoop..."
