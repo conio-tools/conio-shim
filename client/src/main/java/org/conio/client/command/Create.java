@@ -95,7 +95,9 @@ public class Create implements Command {
     conf.addResource(new Path("/etc/hadoop/yarn-site.xml"));
     conf.reloadConfiguration();
 
-    initializeClients();
+    yarnClient = createYarnClient();
+    yarnClient.init(conf);
+    zkClient = createClientWrapper();
 
     CommandLine cliParser = new GnuParser().parse(collectOptions(), args);
     yamlFile = cliParser.getOptionValue(YAML.option());
@@ -113,10 +115,13 @@ public class Create implements Command {
   }
 
   @VisibleForTesting
-  void initializeClients() {
-    yarnClient = YarnClient.createYarnClient();
-    yarnClient.init(conf);
-    zkClient = new ClientWrapperWithOptions();
+  YarnClient createYarnClient() {
+    return YarnClient.createYarnClient();
+  }
+
+  @VisibleForTesting
+  ClientWrapperWithOptions createClientWrapper() {
+    return new ClientWrapperWithOptions();
   }
 
   /**
@@ -318,7 +323,8 @@ public class Create implements Command {
   }
 
   // TODO refactor this function
-  private void addToLocalResources(
+  @VisibleForTesting
+  void addToLocalResources(
       FileSystem fs,
       String fileSrcPath,
       String fileDstPath,
