@@ -3,8 +3,6 @@ package org.conio.client.command;
 import static org.conio.client.command.option.CLIOption.QUEUE;
 import static org.conio.client.command.option.CLIOption.WATCH;
 import static org.conio.client.command.option.CLIOption.YAML;
-import static org.conio.client.command.option.CLIOption.ZK_CLIENT;
-import static org.conio.client.command.option.CLIOption.ZK_ROOT_NODE;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -68,8 +66,6 @@ public class Create implements Command {
   private String yamlFile;
   private String queueName = Constants.DEFAULT_QUEUE_NAME;
   private final ClientWrapperWithOptions zkClient;
-  private String zkConnectionString;
-  private String zkRoot;
 
   private Pod pod;
   private boolean watch;
@@ -113,12 +109,7 @@ public class Create implements Command {
     }
     LOG.debug("Will start the application in {} queue", queueName);
 
-    zkConnectionString = cliParser.getOptionValue(ZK_CLIENT.option());
-    zkRoot = cliParser.getOptionValue(ZK_ROOT_NODE.option());
-    if (zkRoot == null) {
-      zkRoot = Constants.DEFAULT_ZK_ROOT_NODE;
-    }
-    zkClient.init(zkRoot, zkConnectionString);
+    zkClient.init(cliParser);
   }
 
   /**
@@ -168,8 +159,8 @@ public class Create implements Command {
         pod.getMetadata().getName(), yamlFile);
 
     Map<String, String> env = new HashMap<>();
-    env.put(Constants.ENV_ZK_ADDRESS, zkConnectionString);
-    env.put(Constants.ENV_ZK_ROOT_NODE, zkRoot);
+    env.put(Constants.ENV_ZK_ADDRESS, zkClient.getZkConnectionString());
+    env.put(Constants.ENV_ZK_ROOT_NODE, zkClient.getZkRoot());
     env.put(Constants.ENV_NAMESPACE, pod.getMetadata().getExactNamespace());
     env.put(Constants.ENV_POD_NAME, pod.getMetadata().getName());
     setupAppMasterJar(env);
