@@ -7,7 +7,10 @@ public enum CLIOption {
   WATCH("w", "watch", false, "watches the application until termination"),
   YAML("y", "yaml", true, "the yaml file containing the description of the Kubernetes object"),
   ZK_CLIENT("zk", "zookeeper", true, "the address of the zookeeper instance to connect to"),
-  ZK_ROOT_NODE("zn", "znode", true, "the root znode conio uses for storing data in Zookeeper");
+  ZK_ROOT_NODE("zn", "znode", true, "the root znode conio uses for storing data in Zookeeper"),
+
+  TEST("t", "test", true, "long test description"),
+  TEST2("t2", "test2", false, "long test description");
 
   private final String shortOpt;
   private final String longOpt;
