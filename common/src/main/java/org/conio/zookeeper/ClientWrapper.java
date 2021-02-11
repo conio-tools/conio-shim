@@ -1,6 +1,4 @@
-package org.conio.container.zookeeper;
-
-import static org.conio.container.Constants.POD_ZK_PATH_TEMPLATE;
+package org.conio.zookeeper;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -10,6 +8,8 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
 
+import static org.conio.Constants.POD_ZK_PATH_TEMPLATE;
+
 /**
  * A Wrapper class around the Zookeeper client.
  * Each node that is created/read through this wrapper class is done
@@ -17,16 +17,16 @@ import org.apache.curator.retry.RetryNTimes;
  */
 public class ClientWrapper {
   private CuratorFramework zkClient;
-  private final String zkRoot;
+  private String zkRoot;
 
   /**
    * Creates a ClientWrapper from the ZK connection string and the root znode.
    */
-  public ClientWrapper(String zkRoot) {
-    this.zkRoot = zkRoot;
+  public ClientWrapper() {
   }
 
-  public void init(String zkConnectionString) {
+  public void init(String zkRoot, String zkConnectionString) {
+    this.zkRoot = zkRoot;
     RetryPolicy retryPolicy = new RetryNTimes(10, 1000);
     this.zkClient = CuratorFrameworkFactory.newClient(zkConnectionString, retryPolicy);
   }
