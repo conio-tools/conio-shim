@@ -1,10 +1,9 @@
 package org.conio.client.command.option;
 
-import org.apache.commons.cli.Options;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.apache.commons.cli.Options;
 
 public class OptionBuilder {
   private final List<CLIOption> cliOptions = new ArrayList<>();
@@ -31,6 +30,9 @@ public class OptionBuilder {
     return this;
   }
 
+  /**
+   * Builds the {@code Options} object.
+   */
   public Options build() {
     Options opts = new Options();
     for (CLIOption cliOption : cliOptions) {
