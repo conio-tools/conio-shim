@@ -1,10 +1,10 @@
 package org.conio.container.engine;
 
-import static org.conio.container.Constants.ENV_NAMESPACE;
-import static org.conio.container.Constants.ENV_POD_NAME;
-import static org.conio.container.Constants.ENV_ZK_ADDRESS;
-import static org.conio.container.Constants.ENV_ZK_ROOT_NODE;
-import static org.conio.container.Constants.LOOP_TIME;
+import static org.conio.Constants.ENV_NAMESPACE;
+import static org.conio.Constants.ENV_POD_NAME;
+import static org.conio.Constants.ENV_ZK_ADDRESS;
+import static org.conio.Constants.ENV_ZK_ROOT_NODE;
+import static org.conio.Constants.LOOP_TIME;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
@@ -33,7 +33,7 @@ import org.conio.container.engine.util.EnvVarProvider;
 import org.conio.container.engine.util.Translate;
 import org.conio.container.k8s.Container;
 import org.conio.container.k8s.Pod;
-import org.conio.container.zookeeper.ClientWrapper;
+import org.conio.zookeeper.ClientWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -210,8 +210,8 @@ public class ApplicationMaster {
 
   @VisibleForTesting
   ClientWrapper getZkClient() {
-    ClientWrapper zkClient = new ClientWrapper(envVars.get(ENV_ZK_ROOT_NODE));
-    zkClient.init(envVars.get(ENV_ZK_ADDRESS));
+    ClientWrapper zkClient = new ClientWrapper();
+    zkClient.init(envVars.get(ENV_ZK_ROOT_NODE), envVars.get(ENV_ZK_ADDRESS));
     return zkClient;
   }
 

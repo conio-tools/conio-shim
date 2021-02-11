@@ -2,15 +2,15 @@ package org.conio.container.engine.mock;
 
 import java.io.File;
 import org.apache.commons.io.FileUtils;
-import org.conio.container.zookeeper.ClientWrapper;
+import org.conio.zookeeper.ClientWrapper;
 
 public class MockClientWrapper extends ClientWrapper {
   public MockClientWrapper() {
-    super(null);
+    super();
   }
 
   @Override
-  public void init(String zkConnectionString) {
+  public void init(String zkRoot, String zkConnectionString) {
   }
 
   @Override

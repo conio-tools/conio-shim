@@ -1,4 +1,4 @@
-package org.conio.container;
+package org.conio;
 
 public class Constants {
   public static final String DEFAULT_QUEUE_NAME = "root.default";

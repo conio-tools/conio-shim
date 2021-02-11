@@ -1,6 +1,6 @@
 package org.conio.container.engine.mock;
 
-import static org.conio.container.Constants.LOOP_TIME;
+import static org.conio.Constants.LOOP_TIME;
 
 import java.util.Collections;
 import java.util.List;
