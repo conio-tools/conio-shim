@@ -1,5 +1,6 @@
 package org.conio.client;
 
+import java.util.Arrays;
 import org.conio.client.command.Command;
 import org.conio.client.command.Create;
 import org.conio.client.command.Delete;
@@ -7,8 +8,6 @@ import org.conio.client.command.Get;
 import org.conio.client.command.Update;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Arrays;
 
 public class Client {
 
@@ -39,6 +38,7 @@ public class Client {
         break;
       case "apply":
         command = new Update();
+        break;
       case "delete":
         command = new Delete();
         break;
@@ -57,6 +57,10 @@ public class Client {
     }
   }
 
+  /**
+   * Main entrypoint of the client module.
+   * Starts the client initializes it, and handles exceptions.
+   */
   public static void main(String[] args) {
     Client client = new Client();
     try {

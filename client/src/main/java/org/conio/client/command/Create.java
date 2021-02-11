@@ -1,5 +1,19 @@
 package org.conio.client.command;
 
+import static org.conio.client.command.option.CLIOption.QUEUE;
+import static org.conio.client.command.option.CLIOption.WATCH;
+import static org.conio.client.command.option.CLIOption.YAML;
+import static org.conio.client.command.option.CLIOption.ZK_CLIENT;
+import static org.conio.client.command.option.CLIOption.ZK_ROOT_NODE;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Vector;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.Options;
@@ -33,30 +47,14 @@ import org.apache.hadoop.yarn.client.util.YarnClientUtils;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.DockerClientConfigHandler;
 import org.apache.hadoop.yarn.util.resource.Resources;
+import org.conio.Constants;
 import org.conio.client.ApplicationMonitor;
 import org.conio.client.command.option.OptionBuilder;
-import org.conio.Constants;
 import org.conio.client.zookeeper.ClientWrapperWithOptions;
 import org.conio.container.engine.ApplicationMaster;
 import org.conio.container.k8s.Pod;
-import org.conio.zookeeper.ClientWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Vector;
-
-import static org.conio.client.command.option.CLIOption.QUEUE;
-import static org.conio.client.command.option.CLIOption.WATCH;
-import static org.conio.client.command.option.CLIOption.YAML;
-import static org.conio.client.command.option.CLIOption.ZK_CLIENT;
-import static org.conio.client.command.option.CLIOption.ZK_ROOT_NODE;
 
 public class Create implements Command {
 
@@ -76,6 +74,9 @@ public class Create implements Command {
   private Pod pod;
   private boolean watch;
 
+  /**
+   * Create {@code Command} is responsible for creating pods from the client.
+   */
   public Create() {
     conf = new YarnConfiguration();
     // TODO make this configurable
