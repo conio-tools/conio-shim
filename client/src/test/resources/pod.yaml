@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: test
+  name: sleep-pod
+  labels:
+    app: sleep
+  annotations:
+    test: test_value
+spec:
+  containers:
+    - image: busybox
+      command:
+        - "sleep"
+        - "60"
+      imagePullPolicy: IfNotPresent
+      name: sleep-container
+      env:
+        - name: SOME_KEY
+          value: "some value"
+        - name: OTHER_KEY
+          value: "some other value"
+      resources:
+        limits:
+          cpu: 1
+          memory: 200Mi
+        requests:
+          cpu: 500m
+          memory: 100Mi
+  restartPolicy: Never
