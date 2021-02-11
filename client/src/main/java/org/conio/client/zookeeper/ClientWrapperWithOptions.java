@@ -12,11 +12,6 @@ import org.conio.client.command.option.CLIOptionProvider;
 import org.conio.zookeeper.ClientWrapper;
 
 public class ClientWrapperWithOptions extends ClientWrapper implements CLIOptionProvider {
-  @Override
-  public Collection<CLIOption> collectCLIOptions() {
-    return Arrays.asList(ZK_CLIENT, ZK_ROOT_NODE);
-  }
-
   /**
    * Precomputes the parameter from the command line arguments
    * to initialize the Zookeeper client.
@@ -28,5 +23,10 @@ public class ClientWrapperWithOptions extends ClientWrapper implements CLIOption
       zkRoot = Constants.DEFAULT_ZK_ROOT_NODE;
     }
     super.init(zkRoot, zkConnectionString);
+  }
+
+  @Override
+  public Collection<CLIOption> collectCLIOptions() {
+    return Arrays.asList(ZK_CLIENT, ZK_ROOT_NODE);
   }
 }

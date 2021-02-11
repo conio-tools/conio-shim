@@ -1,15 +1,14 @@
 package org.conio.container.engine;
 
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.spy;
 
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.client.api.AMRMClient;
 import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.conio.container.engine.mock.MockAMRMImpl;
-import org.conio.container.engine.mock.MockClientWrapper;
 import org.conio.container.engine.mock.MockEnvVarProvider;
 import org.conio.container.engine.mock.MockNMClientAsync;
+import org.conio.zookeeper.MockClientWrapper;
 import org.junit.Test;
 import org.mockito.Mockito;
 
