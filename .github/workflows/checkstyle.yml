@@ -14,5 +14,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           reporter: 'github-pr-check'
           tool_name: 'testtool'
-          checkstyle_config: 'src/main/resources/checkstyle.xml'
+          checkstyle_config: 'common/src/main/resources/checkstyle.xml'
           level: 'error'
