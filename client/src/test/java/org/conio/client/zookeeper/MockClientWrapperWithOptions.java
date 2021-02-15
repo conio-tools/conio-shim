@@ -1,7 +1,6 @@
 package org.conio.client.zookeeper;
 
 import java.io.File;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.io.FileUtils;
 
