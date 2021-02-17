@@ -21,4 +21,8 @@ public class MockClientWrapper extends ClientWrapper {
     File file = new File("src/test/resources/sleep_pod.yaml");
     return FileUtils.readFileToByteArray(file);
   }
+
+  @Override
+  public void close() {
+  }
 }
