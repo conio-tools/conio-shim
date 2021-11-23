@@ -10,6 +10,9 @@ metadata:
 spec:
   containers:
     - image: busybox
+      command:
+        - "sleep"
+        - "60"
       imagePullPolicy: IfNotPresent
       name: sleep-container
       env:
